@@ -1,0 +1,38 @@
+<div class="history-container">
+  <h2>Activity Audit Trail</h2>
+
+  <!-- Render Log Items Loop -->
+  <div class="log-list">
+    @for (log of logs(); track log.id) {
+      <div class="log-card">
+        <div class="log-header">
+          <span class="badge" [class]="log.action">{{ log.action }}</span>
+          <span class="timestamp">
+            {{ log.timestamp ? (log.timestamp.toDate() | date:'medium') : 'Processing...' }}
+          </span>
+        </div>
+        <p class="details">{{ log.details }}</p>
+        <div class="operator">Executed by: {{ getShortName(log.userEmail) }}</div>
+      </div>
+    } @empty {
+      @if (!isLoading()) {
+        <p class="empty-msg">No activity logs recorded yet.</p>
+      }
+    }
+  </div>
+
+  <!-- Pagination Actions Zone -->
+  <div class="pagination-actions">
+    @if (isLoading()) {
+      <div class="spinner">Fetching data chunks...</div>
+    }
+
+    @if (hasMore() && !isLoading()) {
+      <button class="load-more-btn" (click)="loadMoreLogs()">
+        Load Older Entries (Next 50)
+      </button>
+    } @else if (!hasMore() && logs().length > 0) {
+      <div class="end-marker">✓ All logs successfully loaded.</div>
+    }
+  </div>
+</div>

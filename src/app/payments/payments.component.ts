@@ -9,6 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
 import { NotificationService } from '../notification.service';
+import { ActivityLogService } from '../activity-history/activity-log.service';
 
 @Component({
   selector: 'app-payments',
@@ -20,6 +21,7 @@ export class PaymentsComponent implements OnInit {
   @Input() plots: Plot[] = [];
   private colonyService = inject(ColonyService);
   private notify = inject(NotificationService);
+  private activityLog = inject(ActivityLogService);
 
   form = {
     plotNumber: '',
@@ -93,18 +95,42 @@ export class PaymentsComponent implements OnInit {
       paymentPayload,
       matchedPlot.id,
       matchedPlot.outstandingDues || 0
-    ).then(() => {
+    ).then(async () => {
+
+      // 🌟 FIX A: Wrap background logging in a try/catch.
+      // If the audit log fails for any reason, it won't crash your UI notifications or reset flows!
+      try {
+        await this.activityLog.log(
+          'CREATE_PAYMENT',
+          `Processed payment of ${paymentPayload.amount} for Plot ${paymentPayload.plotNumber} (${paymentPayload.month}) via ${paymentPayload.method}`
+        );
+      } catch (logError) {
+        console.warn('Activity log failed to save background trail, continuing execution:', logError);
+      }
+
+      // 🌟 FIX B: Save the receipt payload and turn on the success popup overlay
+      this.lastSavedPayment.set(paymentPayload);
+      this.showSuccess.set(true);
+
+      // 🌟 FIX C: Trigger the toast alert
       this.notify.showSuccess('Payment synchronized and outstanding balance reduced successfully.');
-        this.form = {
-          plotNumber: '',
-          amount: 0,
-          month: this.colonyService.getCurrentMonth(),
-          date: this.colonyService.getCurrentDate(),
-          method: 'UPI',
-          remark: ''
-        };
+
+      // 🌟 FIX D: Clear out the form back to initial states
+      this.form = {
+        plotNumber: '',
+        amount: 0,
+        month: this.colonyService.getCurrentMonth(),
+        date: this.colonyService.getCurrentDate(),
+        method: 'UPI',
+        remark: ''
+      };
+    }).catch((dbError) => {
+      // Catch-all database failure fallback
+      this.notify.showError('Database Write Error: Could not synchronize ledger inflow.');
+      console.error(dbError);
     });
   }
+
   whatsappMeReceipt() {
     if (!this.lastSavedPayment()) return;
     const p = this.lastSavedPayment();

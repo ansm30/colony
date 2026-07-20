@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
+import { ActivityLogService } from '../activity-history/activity-log.service';
 
 @Component({
   selector: 'app-expenses',
@@ -16,6 +17,7 @@ import { MatListModule } from '@angular/material/list';
 })
 export class ExpensesComponent {
   private colonyService = inject(ColonyService);
+  private activityLog = inject(ActivityLogService);
 
   // Unified single configuration entity form
   form = {
@@ -53,8 +55,12 @@ export class ExpensesComponent {
       remark: this.form.remark || undefined
     };
 
-    this.colonyService.addExpense(expensePayload).then(() => {
+    this.colonyService.addExpense(expensePayload).then(async () => {
       this.showSuccess.set(true);
+      await this.activityLog.log(
+        'CREATE_EXPENSE',
+        `Recorded expense of ${expensePayload.amount} for ${expensePayload.title} (${expensePayload.month})`
+      );
       this.form = { title: '', amount: 0, month: this.colonyService.getCurrentMonth(), date: this.colonyService.getCurrentDate(), remark: '' };
       setTimeout(() => this.showSuccess.set(false), 2000);
     });

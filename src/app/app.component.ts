@@ -11,13 +11,14 @@ import { SetupComponent } from './setup/setup.component';
 import { NotificationService } from './notification.service';
 import { RouterOutlet, Router } from '@angular/router'; // <-- Added Router here
 import { AuthService } from './services/auth.service';
+import { ActivityHistoryComponent } from './activity-history/activity-history.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     CommonModule, MatToolbarModule, MatButtonModule, RouterOutlet,
-    DashboardComponent, PaymentsComponent, ExpensesComponent, SetupComponent
+    DashboardComponent, PaymentsComponent, ExpensesComponent, SetupComponent, ActivityHistoryComponent
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
@@ -28,7 +29,7 @@ export class AppComponent implements OnInit {
   public authService = inject(AuthService);
   public router = inject(Router); // <-- Inject Router here to track current URLs
 
-  activeTab = signal<'dashboard' | 'payment' | 'expense' | 'setup'>('dashboard');
+  activeTab = signal<'dashboard' | 'payment' | 'expense' | 'setup' | 'history'  >('dashboard');
   allPlots = signal<any[]>([]);
 
   ngOnInit() {

@@ -1,0 +1,80 @@
+.history-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.log-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.log-card {
+  border-left: 4px solid #673ab7; /* Primary color indicator line */
+  border-radius: 6px !important;
+  background: #ffffff;
+}
+
+.log-card-body {
+  padding: 12px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.log-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.operator-tag {
+  color: #3f51b5;
+}
+
+.log-time {
+  color: #888;
+  font-weight: 500;
+}
+
+.log-details-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.action-badge {
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.log-text {
+  margin: 0;
+  font-size: 13px;
+  color: #333;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.log-date-footer {
+  font-size: 10px;
+  color: #bbb;
+  align-self: flex-end;
+}

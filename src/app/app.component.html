@@ -24,6 +24,18 @@
         @if (activeTab() === 'payment') {
           <app-payments [plots]="allPlots()"></app-payments>
         }
+
+        @if (activeTab() === 'setup') {
+          <app-setup [plots]="allPlots()"></app-setup>
+        }
+
+        @if (activeTab() === 'expense') {
+          <app-expenses></app-expenses>
+        }
+
+        @if (activeTab() === 'history') {
+          <app-activity-history></app-activity-history>
+        }
         <!-- Rest of your application tabs -->
       </main>
 
@@ -31,6 +43,9 @@
       <nav style="position: absolute; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 8px 0; border-top: 1px solid #e0e0e0; z-index: 999;">
         <button mat-button (click)="activeTab.set('dashboard')" [color]="activeTab() === 'dashboard' ? 'primary' : ''">📊 Dash</button>
         <button mat-button (click)="activeTab.set('payment')" [color]="activeTab() === 'payment' ? 'primary' : ''">💸 Pay</button>
+        <button mat-button (click)="activeTab.set('expense')" [color]="activeTab() === 'expense' ? 'primary' : ''">💰 Exp</button>
+        <button mat-button (click)="activeTab.set('setup')" [color]="activeTab() === 'setup' ? 'primary' : ''">⚙️ Setup</button>
+        <button mat-button (click)="activeTab.set('history')" [color]="activeTab() === 'history' ? 'primary' : ''">📜 Hist</button>
       </nav>
     </div>
 
