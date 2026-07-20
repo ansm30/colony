@@ -175,30 +175,13 @@
 
   <!-- TABULAR REGISTRY FULL OVERLAY SCREEN MODAL -->
   @if (showTabularRegistry()) {
-    <div class="fullscreen-overlay-modal">
-      <div class="modal-header-row">
-        <div>
-          <h3 class="modal-title">Filtered Registry Table</h3>
-          <span class="modal-subtitle">Target Assessment Month: <b>{{ currentMonth }}</b></span>
-        </div>
-        <button mat-stroked-button color="warn" (click)="toggleTabularRegistry(false)">Close Grid</button>
-      </div>
-
-      <div class="modal-metrics-strip">
-        <div><span class="strip-label">MONTHLY PAID</span><br><b class="strip-val text-green">₹{{monthlyMetrics().paid}}</b></div>
-        <div><span class="strip-label">MONTHLY EXPENSE</span><br><b class="strip-val text-red">₹{{monthlyMetrics().expense}}</b></div>
-      </div>
-
-      <button mat-flat-button color="primary" class="full-width whatsapp-green-btn" (click)="shareTabularRegistryViaWhatsApp()">
-        🟢 Share Filtered Grid via WhatsApp
-      </button>
-
-      <div class="scrollable-table-wrapper">
+    <div style="flex: 1; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
         <table class="registry-data-table">
           <thead>
             <tr>
               <th>Plot</th>
               <th>Owner Info</th>
+              <th>Payment Log</th> <!-- 👈 Added Header Column -->
               <th class="text-right">Paid</th>
               <th class="text-right">Due</th>
             </tr>
@@ -211,6 +194,10 @@
                   <div class="table-owner-name">{{ row.ownerName }}</div>
                   <div class="table-owner-phone">{{ row.phone }}</div>
                 </td>
+                <!-- 👇 Added Data Cell for Dates & Methods -->
+                <td style="color: #475569; font-size: 11px; max-width: 180px; white-space: normal; word-break: break-word;">
+                  {{ row.paymentDetails }}
+                </td>
                 <td class="text-right table-paid-amt">₹{{ row.amountPaid }}</td>
                 <td class="text-right table-due-amt" [style.color]="row.amountDue > 0 ? '#dc2626' : '#64748b'">
                   ₹{{ row.amountDue }}
@@ -218,13 +205,12 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="4" class="table-empty-fallback">No plots match applied criteria.</td>
+                <td colspan="5" class="table-empty-fallback">No plots match applied criteria.</td> <!-- Adjusted colspan to 5 -->
               </tr>
             }
           </tbody>
         </table>
       </div>
-    </div>
   }
 
   <!-- HISTORICAL LEDGER OVERLAY MODAL -->

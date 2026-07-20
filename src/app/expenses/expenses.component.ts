@@ -17,10 +17,17 @@ import { MatListModule } from '@angular/material/list';
 export class ExpensesComponent {
   private colonyService = inject(ColonyService);
 
-  form = { title: '', amount: 0, month: '2026-07' };
-  filterMonth = signal<string>('2026-07');
-  scopedExpenses = signal<Expense[]>([]);
+  // Unified single configuration entity form
+  form = {
+    title: '',
+    amount: 0,
+    month: this.colonyService.getCurrentMonth(),
+    date: this.colonyService.getCurrentDate(),
+    remark: ''
+  };
 
+  filterMonth = signal<string>(this.colonyService.getCurrentMonth());
+  scopedExpenses = signal<Expense[]>([]);
   showSuccess = signal(false);
 
   constructor() {
@@ -37,10 +44,19 @@ export class ExpensesComponent {
 
   save() {
     if (!this.form.title || !this.form.amount) return;
-    this.colonyService.addExpense({ ...this.form, date: new Date().toLocaleDateString() }).then(() => {
+
+    const expensePayload: Expense = {
+      title: this.form.title,
+      amount: this.form.amount,
+      month: this.form.month,
+      date: this.form.date,
+      remark: this.form.remark || undefined
+    };
+
+    this.colonyService.addExpense(expensePayload).then(() => {
       this.showSuccess.set(true);
-      this.form = { title: '', amount: 0, month: '2026-07' };
-      setTimeout(() => this.showSuccess.set(false), 2000); // Auto-clear overlay panel
+      this.form = { title: '', amount: 0, month: this.colonyService.getCurrentMonth(), date: this.colonyService.getCurrentDate(), remark: '' };
+      setTimeout(() => this.showSuccess.set(false), 2000);
     });
   }
 }

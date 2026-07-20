@@ -21,13 +21,46 @@ export interface Plot {
   history?: { [month: string]: PlotMonthConfig };
 }
 
-export interface Payment { id?: string; plotNumber: string; amount: number; month: string; date: string; }
-export interface Expense { id?: string; title: string; amount: number; month: string; date: string; }
+export interface Payment {
+  id?: string;
+  plotNumber: string;
+  amount: number;
+  month: string; // e.g., '2026-07'
+  date: string;  // e.g., '2026-07-20'
+  method: 'UPI' | 'Cash' | 'Bank Transfer' | string; // 👈 Added
+  remark?: string; // 👈 Added
+}
+
+export interface Expense {
+  id?: string;
+  title: string;
+  amount: number;
+  month: string;
+  date: string;
+  remark?: string; // 👈 Added
+}
+
 export interface FinancialSummary { totalCollected: number; totalSpent: number; }
 
 @Injectable({ providedIn: 'root' })
 export class ColonyService {
   private firestore = inject(Firestore);
+
+  /**
+   * Generates a local-timezone YYYY-MM string for HTML month inputs
+   */
+  getCurrentMonth(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  /**
+   * Generates a local-timezone YYYY-MM-DD string for HTML date inputs
+   */
+  getCurrentDate(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }
 
   // 1. High-Performance Cost-Free Summary Indicators
   getFinancialSummary(): Observable<FinancialSummary> {

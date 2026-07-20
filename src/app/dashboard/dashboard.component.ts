@@ -25,7 +25,7 @@ export class DashboardComponent implements OnInit {
   @Input() plots: Plot[] = [];
   colonyService = inject(ColonyService);
 
-  currentMonth = '2026-07';
+  currentMonth = this.colonyService.getCurrentMonth();
   search = signal<string>('');
   activeFilters = signal<string[]>([]);
 
@@ -136,12 +136,18 @@ export class DashboardComponent implements OnInit {
   tabularRegistryData = computed(() => {
     return this.plotBreakdown().map(item => {
       const p = item.plot;
-      const totalPaidInMonth = this.scopedPayments()
-        .filter(pay => pay.plotNumber === p.plotNumber)
-        .reduce((sum, item) => sum + item.amount, 0);
+
+      // Filter out all payments matching this specific plot for the viewed month
+      const plotPaymentsInMonth = this.scopedPayments().filter(pay => pay.plotNumber === p.plotNumber);
+      const totalPaidInMonth = plotPaymentsInMonth.reduce((sum, pay) => sum + pay.amount, 0);
 
       const expected = this.colonyService.getExpectedRateForMonth(p, this.currentMonth);
       const currentDueAmount = Math.max(0, expected - totalPaidInMonth);
+
+      // NEW: Extract dates and payment methods into a readable summary string
+      const paymentDetailsSummary = plotPaymentsInMonth.length > 0
+        ? plotPaymentsInMonth.map(pay => `${pay.date} (${pay.method || 'N/A'})`).join(', ')
+        : '—';
 
       return {
         plotNumber: p.plotNumber,
@@ -149,7 +155,8 @@ export class DashboardComponent implements OnInit {
         phone: p.phone || 'N/A',
         amountPaid: totalPaidInMonth,
         amountDue: currentDueAmount,
-        size: p.size || 0, // Explicitly keeping the custom plot size safely mapped
+        size: p.size || 0,
+        paymentDetails: paymentDetailsSummary, // 👈 Exposed to view template
         status: totalPaidInMonth >= expected ? 'PAID' : totalPaidInMonth > 0 ? 'PARTIAL' : 'DUE'
       };
     });

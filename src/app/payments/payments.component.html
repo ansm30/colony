@@ -1,6 +1,6 @@
 <div style="padding: 16px; display: flex; flex-direction: column; gap: 16px; position: relative;">
 
-  <!-- SCOPED CONTAINER EMBEDDED SUCCESS NOTIFICATION DIALOG COMPONENT BLOCK -->
+  <!-- SUCCESS DIALOG OVERLAY PANEL -->
   @if (showSuccess()) {
     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 58, 138, 0.93); backdrop-filter: blur(6px); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; padding: 24px; box-sizing: border-box; border-radius: 8px;">
       <span style="font-size: 56px; margin-bottom: 12px;">✅</span>
@@ -18,9 +18,11 @@
     </div>
   }
 
+  <!-- INPUT CONTROLLER CARD PANEL -->
   <mat-card style="padding: 16px;">
     <h3 style="margin: 0 0 16px 0; color: #1e3a8a; font-weight: 500;">Log Collection Receipt</h3>
     <div style="display: flex; flex-direction: column; gap: 4px;">
+
       <mat-form-field appearance="outline" style="width: 100%;">
         <mat-label>Select Target Plot</mat-label>
         <mat-select [(ngModel)]="form.plotNumber" (selectionChange)="autoFillRate()">
@@ -40,15 +42,31 @@
         <input type="month" [(ngModel)]="form.month" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit;" />
       </div>
 
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Payment Method</mat-label>
+        <mat-select [(ngModel)]="form.method" name="method" required>
+          <mat-option value="UPI">📱 UPI / QR Code</mat-option>
+          <mat-option value="Cash">💵 Cold Cash</mat-option>
+          <mat-option value="Bank Transfer">🏦 NetBanking / IMPS</mat-option>
+          <mat-option value="Cheque">✍️ Cheque Payment</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Payment Remark / Reference Notes</mat-label>
+        <input matInput [(ngModel)]="form.remark" name="remark" placeholder="e.g. Txn ID: 6204... or Paid via brother" />
+      </mat-form-field>
+
       <button mat-raised-button color="primary" style="width: 100%; padding: 12px 0;" (click)="save()">
         Commit Receipt Ledger
       </button>
     </div>
   </mat-card>
 
+  <!-- RE-BUILT COMPREHENSIVE REGISTRY LOG HISTORY DISPLAY CARD -->
   <mat-card style="padding: 16px;">
     <h3 style="margin: 0 0 12px 0; font-weight: 500; font-size: 15px;">Search Filter Inflows</h3>
-    <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+    <div style="display: flex; gap: 8px; margin-bottom: 16px; align-items: center;">
       <mat-form-field appearance="outline" style="flex: 2;">
         <mat-label>Plot No.</mat-label>
         <input matInput [(ngModel)]="filterPlot" placeholder="e.g. 104" />
@@ -58,15 +76,37 @@
       </div>
     </div>
 
-    <mat-nav-list>
+    <mat-nav-list style="padding: 0; display: flex; flex-direction: column; gap: 10px;">
       @for (pay of getFilteredPayments(); track pay.id) {
-        <mat-list-item style="height: auto; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
-          <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-            <div>
-              <span style="font-weight: 600; font-size: 14px;">Plot #{{pay.plotNumber}}</span>
-              <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Date: {{pay.date}}</div>
+        <mat-list-item style="height: auto; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #ffffff;">
+          <div style="display: flex; justify-content: space-between; width: 100%; align-items: flex-start;">
+            <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-weight: 700; font-size: 14px; color: #1e3a8a;">Plot #{{pay.plotNumber}}</span>
+                <span style="font-size: 10px; font-weight: 700; padding: 2px 6px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 4px; text-transform: uppercase;">
+                  {{pay.method || 'Unspecified'}}
+                </span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 2px 8px; font-size: 11px; color: #64748b;">
+                <div><strong>Logged Date:</strong> {{pay.date}}</div>
+                <div><strong>Billing Cycle:</strong> {{pay.month}}</div>
+                @if (pay.id) {
+                  <div style="grid-column: 1 / -1; font-family: monospace; color: #94a3b8; font-size: 10px; margin-top: 2px;">
+                    <strong>ID:</strong> {{pay.id}}
+                  </div>
+                }
+              </div>
+
+              @if (pay.remark) {
+                <div style="font-size: 11px; color: #334155; background: #f8fafc; border-left: 3px solid #3b82f6; padding: 4px 8px; border-radius: 0 4px 4px 0; margin-top: 4px; word-break: break-all;">
+                  <strong>Note:</strong> {{pay.remark}}
+                </div>
+              }
+
             </div>
-            <b style="color: #10b981; font-size: 15px;">+ ₹{{pay.amount}}</b>
+            <b style="color: #10b981; font-size: 15px; white-space: nowrap; padding-left: 8px;">+ ₹{{pay.amount}}</b>
           </div>
         </mat-list-item>
       } @empty {

@@ -19,7 +19,15 @@ export class PaymentsComponent implements OnInit {
   @Input() plots: Plot[] = [];
   private colonyService = inject(ColonyService);
 
-  form = { plotNumber: '', amount: 0, month: '2026-07' };
+  form = {
+    plotNumber: '',
+    amount: 0,
+    month: this.colonyService.getCurrentMonth(),
+    date: this.colonyService.getCurrentDate(),
+    method: 'UPI',
+    remark: ''
+  };
+
   filterPlot = '';
   filterMonth = signal<string>('2026-07');
   scopedPayments = signal<Payment[]>([]);
@@ -60,32 +68,37 @@ export class PaymentsComponent implements OnInit {
 
   save() {
     if (!this.form.plotNumber || !this.form.amount) return;
-    const paymentPayload: Payment = { ...this.form, date: new Date().toLocaleDateString() };
+
+    // Explicitly mapping all properties from the form object into the Firestore request payload
+    const paymentPayload: Payment = {
+      plotNumber: this.form.plotNumber,
+      amount: this.form.amount,
+      month: this.form.month,
+      date: this.form.date,
+      method: this.form.method,
+      remark: this.form.remark || undefined
+    };
 
     this.colonyService.addPayment(paymentPayload).then(() => {
       this.lastSavedPayment.set(paymentPayload);
       this.showSuccess.set(true);
-      this.form = { plotNumber: '', amount: 0, month: '2026-07' };
+      this.form = { plotNumber: '', amount: 0, month: this.colonyService.getCurrentMonth(), date: this.colonyService.getCurrentDate(), method: 'UPI', remark: '' };
     });
   }
 
-whatsappMeReceipt() {
+  whatsappMeReceipt() {
     if (!this.lastSavedPayment()) return;
-    const p = this.lastSavedPayment()!;
+    const p = this.lastSavedPayment();
+    if (!p) return;
 
-    // DYNAMIC ENTRY LOOKUP: Find the real mobile configuration details saved inside the plot profiles array
     const targetPlotProfile = this.plots.find(plot => plot.plotNumber === p.plotNumber);
-
-    // Fallback to standard admin string if phone entry is missing or unconfigured
     let targetPhone = targetPlotProfile?.phone ? targetPlotProfile.phone.replace(/[^0-9]/g, '') : '';
 
-    // Prepend India standard country prefix code sequence if missing from string data
     if (targetPhone.length === 10) {
       targetPhone = '91' + targetPhone;
     }
 
     const msg = `*Payment Confirmation Receipt*\n\n✅ Plot Reference: *Plot #${p.plotNumber}*\n💰 Amount Collected: *₹${p.amount}*\n📅 Statement Cycle: *${p.month}*\n🏛 Date Logged: *${p.date}*\n\nThank you!`;
-
     window.open(`https://wa.me/${targetPhone || '910000000000'}?text=${encodeURIComponent(msg)}`, '_blank');
     this.closeOverlay();
   }
