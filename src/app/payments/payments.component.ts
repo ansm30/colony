@@ -95,6 +95,14 @@ export class PaymentsComponent implements OnInit {
       matchedPlot.outstandingDues || 0
     ).then(() => {
       this.notify.showSuccess('Payment synchronized and outstanding balance reduced successfully.');
+        this.form = {
+          plotNumber: '',
+          amount: 0,
+          month: this.colonyService.getCurrentMonth(),
+          date: this.colonyService.getCurrentDate(),
+          method: 'UPI',
+          remark: ''
+        };
     });
   }
   whatsappMeReceipt() {

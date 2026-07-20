@@ -5,3 +5,36 @@ body {
   font-family: Roboto, "Helvetica Neue", sans-serif;
   background-color: #f5f5f5;
 }/* You can add global styles to this file, and also import other style files */
+
+
+/* Optimize tables and popups for mobile screens up to 480px */
+@media (max-width: 480px) {
+
+  /* 1. Force the popup container to expand fully instead of scrolling internally */
+  .cdk-overlay-pane,
+  .mat-mdc-dialog-content,
+  .popup-container, /* Add your custom popup class name here if you have one */
+  .table-wrapper {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* 2. Tighten up the table cells so more columns fit side-by-side */
+  .mat-mdc-table, table {
+    width: 100% !important;
+  }
+
+  .mat-mdc-header-cell,
+  .mat-mdc-cell,
+  th, td {
+    padding: 6px 4px !important; /* Ultra-compact padding */
+    font-size: 11px !important;   /* Crisp, smaller text size for mobile data */
+  }
+
+  /* 3. Wrap long filenames or text strings instead of clipping them with dots (...) */
+  .mat-mdc-cell, td {
+    white-space: normal !important;
+    word-break: break-all;
+  }
+}

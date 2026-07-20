@@ -1,18 +1,22 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
-import { Auth } from '@angular/fire/auth';
+import { Router } from '@angular/router';
+import { Auth, authState } from '@angular/fire/auth';
+import { map, take } from 'rxjs/operators';
 
-export const authGuard: CanActivateFn = async (route, state) => {
+export const authGuard = () => {
   const auth = inject(Auth);
   const router = inject(Router);
 
-  // Ensures the guard waits until Firebase verifies the login token
-  await auth.authStateReady();
-
-  if (auth.currentUser) {
-    return true;
-  }
-
-  router.navigate(['/login']);
-  return false;
+  // authState watches the Firebase connection status
+  return authState(auth).pipe(
+    take(1), // Take the very first resolved status emission and complete
+    map(user => {
+      if (user) {
+        return true; // User session restored! Allow access to the route.
+      } else {
+        router.navigate(['/login']); // No session found, send to login.
+        return false;
+      }
+    })
+  );
 };

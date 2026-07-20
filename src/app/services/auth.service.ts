@@ -1,6 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Auth, signInWithEmailAndPassword, signOut, user } from '@angular/fire/auth';
-import type { User } from 'firebase/auth';
+import { Auth, authState, signInWithEmailAndPassword, signOut } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 
 @Injectable({
@@ -10,23 +9,26 @@ export class AuthService {
   private auth = inject(Auth);
   private router = inject(Router);
 
-  // Reactive signal readable by any component
-  currentUser = signal<User | null>(null);
+  // Expose the current user as a read-only signal for your UI tabs
+  currentUser = signal<any>(null);
+  authInitialized = signal(false);
 
   constructor() {
-    // Keeps your app state perfectly in sync with Firebase
-    user(this.auth).subscribe(userState => {
-      this.currentUser.set(userState);
+    // Watch auth changes quietly without forcing global redirects here
+    authState(this.auth).subscribe(user => {
+      this.currentUser.set(user);
+      this.authInitialized.set(true);
     });
   }
 
   async login(email: string, password: string) {
-    await signInWithEmailAndPassword(this.auth, email, password);
-    this.router.navigate(['/dashboard']);
+    const credential = await signInWithEmailAndPassword(this.auth, email, password);
+    this.router.navigate(['/dashboard']); // Only redirect explicitly upon a SUCCESSFUL manual login click
+    return credential;
   }
 
   async logout() {
     await signOut(this.auth);
-    this.router.navigate(['/login']);
+    this.router.navigate(['/login']); // Only redirect explicitly upon a manual logout click
   }
 }

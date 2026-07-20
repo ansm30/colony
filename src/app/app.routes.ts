@@ -1,11 +1,12 @@
 import { Routes } from '@angular/router';
-import { DashboardComponent } from './dashboard/dashboard.component';
 import { LoginComponent } from './login/login.component';
-import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
+  // Anyone can hit the root or login paths without an AuthGuard blocking them
+  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
-  { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
-  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
-  { path: '**', redirectTo: '/dashboard' }
+  { path: 'dashboard', component: LoginComponent }, // Or whatever base component handles your view shell
+
+  // Wildcard fallback
+  { path: '**', redirectTo: 'dashboard' }
 ];

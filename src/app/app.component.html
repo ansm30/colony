@@ -1,47 +1,39 @@
-@if (router.url === '/login') {
-  <!-- Clean Window: Only renders the login form when on the login route -->
-  <router-outlet></router-outlet>
+<!-- Wait until Firebase has checked local storage before rendering anything -->
+@if (!authService.authInitialized()) {
+  <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #fafafa;">
+    <p style="font-family: sans-serif; color: #666;">Loading Colony ERP...</p>
+  </div>
 } @else {
-  <!-- Main ERP Hub Shell: Shows up only when logged in and browsing dashboard/tabs -->
-  <div class="app-view-wrapper" style="max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 80px; box-sizing: border-box; background-color: #f5f5f5; position: relative;">
-    <mat-toolbar color="primary" class="mat-elevation-z3">
-      <span>Colony ERP Hub</span>
-    </mat-toolbar>
 
-    <main class="content-body">
-      @if (activeTab() === 'dashboard') {
-        <app-dashboard [plots]="allPlots()"></app-dashboard>
-      }
-      @if (activeTab() === 'payment') {
-        <app-payments [plots]="allPlots()"></app-payments>
-      }
-      @if (activeTab() === 'expense') {
-        <app-expenses></app-expenses>
-      }
-      @if (activeTab() === 'setup') {
-        <app-setup [plots]="allPlots()"></app-setup>
-      }
-    </main>
+  <!-- Once initialized, evaluate if we show the login screen or the dashboard shell -->
+  @if (router.url === '/login') {
+    <router-outlet></router-outlet>
+  } @else {
+    <!-- Main Scrollable ERP Hub Shell -->
+    <div class="app-view-wrapper" style="max-width: 480px; margin: 0 auto; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background-color: #f5f5f5; position: relative;">
 
-    <nav class="mat-elevation-z6" style="position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 8px 0; max-width: 480px; margin: 0 auto; z-index: 999;">
-      <button mat-button (click)="activeTab.set('dashboard')" [color]="activeTab() === 'dashboard' ? 'primary' : ''">📊 Dash</button>
-      <button mat-button (click)="activeTab.set('payment')" [color]="activeTab() === 'payment' ? 'primary' : ''">💸 Pay</button>
-      <button mat-button (click)="activeTab.set('expense')" [color]="activeTab() === 'expense' ? 'primary' : ''">📉 Exp</button>
-      <button mat-button (click)="activeTab.set('setup')" [color]="activeTab() === 'setup' ? 'primary' : ''">⚙ Setup</button>
-    </nav>
-  </div>
+      <mat-toolbar color="primary" style="flex-shrink: 0;">
+        <span>Colony ERP Hub</span>
+      </mat-toolbar>
 
-  <!-- Keeps the router execution running cleanly in the background without double-rendering elements -->
-  <div style="display: none;"><router-outlet></router-outlet></div>
-}
+      <!-- Center container with touch scrolling built-in for your data entries -->
+      <main class="content-body" style="flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 90px; -webkit-overflow-scrolling: touch;">
+        @if (activeTab() === 'dashboard') {
+          <app-dashboard [plots]="allPlots()"></app-dashboard>
+        }
+        @if (activeTab() === 'payment') {
+          <app-payments [plots]="allPlots()"></app-payments>
+        }
+        <!-- Rest of your application tabs -->
+      </main>
 
-<!-- Keep notification system globally available across both states -->
-@if (notificationService.message()) {
-  <div [style.background-color]="notificationService.isError() ? '#fef2f2' : '#f0fdf4'"
-       [style.border-color]="notificationService.isError() ? '#ef4444' : '#22c55e'"
-       style="position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 14px 24px; border-left: 5px solid; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: 500; min-width: 250px; display: flex; justify-content: space-between; align-items: center; gap: 12px; transition: all 0.3s ease;">
-    <span [style.color]="notificationService.isError() ? '#991b1b' : '#166534'">
-      {{ notificationService.isError() ? '❌' : '✅' }} {{ notificationService.message() }}
-    </span>
-  </div>
+      <!-- Pinned navigation bar -->
+      <nav style="position: absolute; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 8px 0; border-top: 1px solid #e0e0e0; z-index: 999;">
+        <button mat-button (click)="activeTab.set('dashboard')" [color]="activeTab() === 'dashboard' ? 'primary' : ''">📊 Dash</button>
+        <button mat-button (click)="activeTab.set('payment')" [color]="activeTab() === 'payment' ? 'primary' : ''">💸 Pay</button>
+      </nav>
+    </div>
+
+    <div style="display: none;"><router-outlet></router-outlet></div>
+  }
 }

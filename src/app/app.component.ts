@@ -10,6 +10,7 @@ import { ExpensesComponent } from './expenses/expenses.component';
 import { SetupComponent } from './setup/setup.component';
 import { NotificationService } from './notification.service';
 import { RouterOutlet, Router } from '@angular/router'; // <-- Added Router here
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -24,6 +25,7 @@ import { RouterOutlet, Router } from '@angular/router'; // <-- Added Router here
 export class AppComponent implements OnInit {
   private colonyService = inject(ColonyService);
   public notificationService = inject(NotificationService);
+  public authService = inject(AuthService);
   public router = inject(Router); // <-- Inject Router here to track current URLs
 
   activeTab = signal<'dashboard' | 'payment' | 'expense' | 'setup'>('dashboard');
