@@ -11,6 +11,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
 import { Subscription } from 'rxjs';
 import { NotificationService } from '../notification.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -25,6 +26,7 @@ import { NotificationService } from '../notification.service';
 export class DashboardComponent implements OnInit, OnDestroy {
 
   colonyService = inject(ColonyService);
+  public authService = inject(AuthService);
 
   currentMonth = this.colonyService.getCurrentMonth();
   search = signal<string>('');

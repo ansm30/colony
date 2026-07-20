@@ -9,12 +9,13 @@ import { PaymentsComponent } from './payments/payments.component';
 import { ExpensesComponent } from './expenses/expenses.component';
 import { SetupComponent } from './setup/setup.component';
 import { NotificationService } from './notification.service';
+import { RouterOutlet, Router } from '@angular/router'; // <-- Added Router here
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
-    CommonModule, MatToolbarModule, MatButtonModule,
+    CommonModule, MatToolbarModule, MatButtonModule, RouterOutlet,
     DashboardComponent, PaymentsComponent, ExpensesComponent, SetupComponent
   ],
   templateUrl: './app.component.html',
@@ -22,7 +23,9 @@ import { NotificationService } from './notification.service';
 })
 export class AppComponent implements OnInit {
   private colonyService = inject(ColonyService);
-  public notificationService = inject(NotificationService)
+  public notificationService = inject(NotificationService);
+  public router = inject(Router); // <-- Inject Router here to track current URLs
+
   activeTab = signal<'dashboard' | 'payment' | 'expense' | 'setup'>('dashboard');
   allPlots = signal<any[]>([]);
 

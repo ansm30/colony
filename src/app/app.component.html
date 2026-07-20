@@ -1,31 +1,41 @@
-<div class="app-view-wrapper" style="max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 80px; box-sizing: border-box; background-color: #f5f5f5; position: relative;">
-  <mat-toolbar color="primary" class="mat-elevation-z3">
-    <span>Colony ERP Hub</span>
-  </mat-toolbar>
+@if (router.url === '/login') {
+  <!-- Clean Window: Only renders the login form when on the login route -->
+  <router-outlet></router-outlet>
+} @else {
+  <!-- Main ERP Hub Shell: Shows up only when logged in and browsing dashboard/tabs -->
+  <div class="app-view-wrapper" style="max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 80px; box-sizing: border-box; background-color: #f5f5f5; position: relative;">
+    <mat-toolbar color="primary" class="mat-elevation-z3">
+      <span>Colony ERP Hub</span>
+    </mat-toolbar>
 
-  <main class="content-body">
-    @if (activeTab() === 'dashboard') {
-      <app-dashboard [plots]="allPlots()"></app-dashboard>
-    }
-    @if (activeTab() === 'payment') {
-      <app-payments [plots]="allPlots()"></app-payments>
-    }
-    @if (activeTab() === 'expense') {
-      <app-expenses></app-expenses>
-    }
-    @if (activeTab() === 'setup') {
-      <app-setup [plots]="allPlots()"></app-setup>
-    }
-  </main>
+    <main class="content-body">
+      @if (activeTab() === 'dashboard') {
+        <app-dashboard [plots]="allPlots()"></app-dashboard>
+      }
+      @if (activeTab() === 'payment') {
+        <app-payments [plots]="allPlots()"></app-payments>
+      }
+      @if (activeTab() === 'expense') {
+        <app-expenses></app-expenses>
+      }
+      @if (activeTab() === 'setup') {
+        <app-setup [plots]="allPlots()"></app-setup>
+      }
+    </main>
 
-  <nav class="mat-elevation-z6" style="position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 8px 0; max-width: 480px; margin: 0 auto; z-index: 999;">
-    <button mat-button (click)="activeTab.set('dashboard')" [color]="activeTab() === 'dashboard' ? 'primary' : ''">📊 Dash</button>
-    <button mat-button (click)="activeTab.set('payment')" [color]="activeTab() === 'payment' ? 'primary' : ''">💸 Pay</button>
-    <button mat-button (click)="activeTab.set('expense')" [color]="activeTab() === 'expense' ? 'primary' : ''">📉 Exp</button>
-    <button mat-button (click)="activeTab.set('setup')" [color]="activeTab() === 'setup' ? 'primary' : ''">⚙ Setup</button>
-  </nav>
-</div>
+    <nav class="mat-elevation-z6" style="position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 8px 0; max-width: 480px; margin: 0 auto; z-index: 999;">
+      <button mat-button (click)="activeTab.set('dashboard')" [color]="activeTab() === 'dashboard' ? 'primary' : ''">📊 Dash</button>
+      <button mat-button (click)="activeTab.set('payment')" [color]="activeTab() === 'payment' ? 'primary' : ''">💸 Pay</button>
+      <button mat-button (click)="activeTab.set('expense')" [color]="activeTab() === 'expense' ? 'primary' : ''">📉 Exp</button>
+      <button mat-button (click)="activeTab.set('setup')" [color]="activeTab() === 'setup' ? 'primary' : ''">⚙ Setup</button>
+    </nav>
+  </div>
 
+  <!-- Keeps the router execution running cleanly in the background without double-rendering elements -->
+  <div style="display: none;"><router-outlet></router-outlet></div>
+}
+
+<!-- Keep notification system globally available across both states -->
 @if (notificationService.message()) {
   <div [style.background-color]="notificationService.isError() ? '#fef2f2' : '#f0fdf4'"
        [style.border-color]="notificationService.isError() ? '#ef4444' : '#22c55e'"
