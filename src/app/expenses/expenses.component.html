@@ -1,0 +1,58 @@
+<div style="padding: 16px; display: flex; flex-direction: column; gap: 16px; position: relative;">
+
+  <!-- SCOPED CONTAINER FROSTED ELEMENT OVERLAY -->
+  @if (showSuccess()) {
+    <div style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(239, 68, 68, 0.93); backdrop-filter: blur(6px); z-index: 9999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; text-align:center; border-radius: 8px;">
+      <span style="font-size: 56px; margin-bottom: 12px;">📉</span>
+      <h2 style="font-size: 22px; margin: 0; font-weight: 500;">Expense Voucher Logged</h2>
+      <p style="font-size: 12px; opacity: 0.8; margin-top: 4px;">Balancing matrix calculation synchronized.</p>
+    </div>
+  }
+
+  <mat-card style="padding: 16px;">
+    <h3 style="margin: 0 0 16px 0; color: #ef4444; font-weight: 500;">Log Maintenance Expense</h3>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Voucher Description Title</mat-label>
+        <input matInput [(ngModel)]="form.title" placeholder="e.g. Pump Repair" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Debit Amount Incurred (₹)</mat-label>
+        <input matInput type="number" [(ngModel)]="form.amount" />
+      </mat-form-field>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Expense Period Month</label>
+        <input type="month" [(ngModel)]="form.month" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit;" />
+      </div>
+
+      <button mat-raised-button color="warn" style="width: 100%; padding: 12px 0;" (click)="save()">
+        Log Expense Voucher
+      </button>
+    </div>
+  </mat-card>
+
+  <mat-card style="padding: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0; font-weight: 500; font-size: 15px;">Historical Debits Ledger</h3>
+      <input type="month" [value]="filterMonth()" (change)="changeMonthFilter($event)" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit;" />
+    </div>
+
+    <mat-nav-list>
+      @for (exp of scopedExpenses(); track exp.id) {
+        <mat-list-item style="height: auto; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
+          <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+            <div>
+              <span style="font-weight: 600; font-size: 14px;">{{exp.title}}</span>
+              <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Date: {{exp.date}}</div>
+            </div>
+            <b style="color: #ef4444; font-size: 14px;">- ₹{{exp.amount}}</b>
+          </div>
+        </mat-list-item>
+      } @empty {
+        <div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 16px 0;">No outlays recorded for this month.</div>
+      }
+    </mat-nav-list>
+  </mat-card>
+</div>

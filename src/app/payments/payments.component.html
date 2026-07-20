@@ -1,0 +1,77 @@
+<div style="padding: 16px; display: flex; flex-direction: column; gap: 16px; position: relative;">
+
+  <!-- SCOPED CONTAINER EMBEDDED SUCCESS NOTIFICATION DIALOG COMPONENT BLOCK -->
+  @if (showSuccess()) {
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 58, 138, 0.93); backdrop-filter: blur(6px); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; padding: 24px; box-sizing: border-box; border-radius: 8px;">
+      <span style="font-size: 56px; margin-bottom: 12px;">✅</span>
+      <h2 style="font-size: 22px; margin: 0 0 8px 0;">Transaction Confirmed</h2>
+      <p style="font-size: 13px; opacity: 0.8; margin-bottom: 24px; padding: 0 20px;">Receipt has been parsed successfully into secure cloud state storage data tracks.</p>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 280px;">
+        <button mat-flat-button color="accent" (click)="whatsappMeReceipt()">
+          💬 Send Confirmation Message
+        </button>
+        <button mat-stroked-button style="color: white; border-color: rgba(255,255,255,0.3);" (click)="closeOverlay()">
+          Dismiss View
+        </button>
+      </div>
+    </div>
+  }
+
+  <mat-card style="padding: 16px;">
+    <h3 style="margin: 0 0 16px 0; color: #1e3a8a; font-weight: 500;">Log Collection Receipt</h3>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Select Target Plot</mat-label>
+        <mat-select [(ngModel)]="form.plotNumber" (selectionChange)="autoFillRate()">
+          @for (p of getSortedPlotsInput(); track p.plotNumber) {
+            <mat-option [value]="p.plotNumber">Plot #{{p.plotNumber}} ({{p.status}})</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Collection Amount (₹)</mat-label>
+        <input matInput type="number" [(ngModel)]="form.amount" />
+      </mat-form-field>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Statement Month</label>
+        <input type="month" [(ngModel)]="form.month" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit;" />
+      </div>
+
+      <button mat-raised-button color="primary" style="width: 100%; padding: 12px 0;" (click)="save()">
+        Commit Receipt Ledger
+      </button>
+    </div>
+  </mat-card>
+
+  <mat-card style="padding: 16px;">
+    <h3 style="margin: 0 0 12px 0; font-weight: 500; font-size: 15px;">Search Filter Inflows</h3>
+    <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+      <mat-form-field appearance="outline" style="flex: 2;">
+        <mat-label>Plot No.</mat-label>
+        <input matInput [(ngModel)]="filterPlot" placeholder="e.g. 104" />
+      </mat-form-field>
+      <div style="flex: 1.5;">
+        <input type="month" [value]="filterMonth()" (change)="changeMonthFilter($event)" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; height: 50px; box-sizing: border-box; font-family: inherit;" />
+      </div>
+    </div>
+
+    <mat-nav-list>
+      @for (pay of getFilteredPayments(); track pay.id) {
+        <mat-list-item style="height: auto; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
+          <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+            <div>
+              <span style="font-weight: 600; font-size: 14px;">Plot #{{pay.plotNumber}}</span>
+              <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Date: {{pay.date}}</div>
+            </div>
+            <b style="color: #10b981; font-size: 15px;">+ ₹{{pay.amount}}</b>
+          </div>
+        </mat-list-item>
+      } @empty {
+        <div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 16px 0;">No matching ledger inflows recorded for this month.</div>
+      }
+    </mat-nav-list>
+  </mat-card>
+</div>

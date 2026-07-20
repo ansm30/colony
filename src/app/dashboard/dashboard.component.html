@@ -1,0 +1,256 @@
+<div class="dashboard-container">
+
+  <!-- BRAND APP TITLE BANNER LAYER -->
+  <div class="header-banner">
+    <h1 class="header-title">Coral Life Colony</h1>
+    <span class="badge-label">DASHBOARD</span>
+  </div>
+
+  <!-- PERSISTENT CASH IN HAND AVAILABLE BALANCE COUNTER -->
+  <mat-card class="balance-card">
+    <div class="balance-header">
+      <mat-icon class="balance-icon">account_balance_wallet</mat-icon>
+      <span class="balance-meta-text">NET AVAILABLE BANK FUNDS</span>
+    </div>
+    <h2 class="balance-amount">₹{{ totalNetCashBalance() }}</h2>
+    <p class="balance-desc">Running cumulative total across all months after subtracting expenses.</p>
+  </mat-card>
+
+  <!-- MONTH SELECTION HEALTH METRIC CARD -->
+  <mat-card class="health-card">
+    <div class="card-header-row">
+      <h3 class="card-section-title">Financial Health</h3>
+      <input type="month" [(ngModel)]="currentMonth" (change)="onMonthChange()" class="month-picker" />
+    </div>
+
+    <div class="metrics-summary-grid">
+      <div class="metric-block">
+        <span class="metric-label">COLLECTED</span>
+        <b class="metric-value text-green">₹{{monthlyMetrics().paid}}</b>
+      </div>
+      <div class="metric-block">
+        <span class="metric-label">EXPENSES</span>
+        <b class="metric-value text-red">₹{{monthlyMetrics().expense}}</b>
+      </div>
+      <div class="metric-block">
+        <span class="metric-label">MONTH GAP</span>
+        <b class="metric-value text-orange">₹{{monthlyMetrics().pending}}</b>
+      </div>
+    </div>
+  </mat-card>
+
+  <!-- TRANSACTION TAB PANELS WITH SIDE PROTECTION -->
+  <mat-card class="tabs-card">
+    <mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start">
+      <mat-tab label="Inbound Collections">
+        <mat-nav-list class="zero-padding">
+          @for (p of scopedPayments(); track p.id) {
+            <mat-list-item class="transaction-list-item">
+              <div class="flex-space-between">
+                <div>
+                  <span class="item-primary-text">Plot Reference #{{p.plotNumber}}</span>
+                  <div class="item-sub-text">Logged: {{p.date}}</div>
+                </div>
+                <b class="text-green">+ ₹{{p.amount}}</b>
+              </div>
+            </mat-list-item>
+          } @empty {
+            <div class="empty-state-msg">No entries captured for this month.</div>
+          }
+        </mat-nav-list>
+      </mat-tab>
+
+      <mat-tab label="Outbound Debits">
+        <mat-nav-list class="zero-padding">
+          @for (e of scopedExpenses(); track e.id) {
+            <mat-list-item class="transaction-list-item">
+              <div class="flex-space-between">
+                <div>
+                  <span class="item-primary-text deep-slate">{{e.title}}</span>
+                  <div class="item-sub-text">Logged: {{e.date}}</div>
+                </div>
+                <b class="text-red">- ₹{{e.amount}}</b>
+              </div>
+            </mat-list-item>
+          } @empty {
+            <div class="empty-state-msg">No operational expense vouchers cataloged.</div>
+          }
+        </mat-nav-list>
+      </mat-tab>
+    </mat-tab-group>
+  </mat-card>
+
+  <!-- MOVED HERE: UNIFIED SEARCH, FILTER BUTTONS & TABULAR CONTROLS WORKSPACE PANEL -->
+  <div class="console-panel">
+
+    <!-- 1. Text Search Box -->
+    <mat-form-field appearance="outline" class="full-width dense-form-field">
+      <mat-label>Search plots...</mat-label>
+      <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Type plot number or name..." />
+    </mat-form-field>
+
+    <!-- 2. Multi-Select Quick Filter Button Array -->
+    <div class="filter-chip-group">
+      <button mat-stroked-button
+        [class.filter-active-paid]="activeFilters().includes('Paid')"
+        (click)="toggleFilter('Paid')" class="filter-chip chip-paid">
+        ✅ Fully Paid
+      </button>
+      <button mat-stroked-button
+        [class.filter-active-partial]="activeFilters().includes('Partial')"
+        (click)="toggleFilter('Partial')" class="filter-chip chip-partial">
+        ⏳ Partially Paid
+      </button>
+      <button mat-stroked-button
+        [class.filter-active-pending]="activeFilters().includes('Pending')"
+        (click)="toggleFilter('Pending')" class="filter-chip chip-pending">
+        ❌ Unpaid This Month
+      </button>
+      <button mat-stroked-button
+        [class.filter-active-dues]="activeFilters().includes('Dues')"
+        (click)="toggleFilter('Dues')" class="filter-chip chip-dues">
+        ⚠️ Has Past Dues
+      </button>
+      <button mat-stroked-button
+        [class.filter-active-completed]="activeFilters().includes('Completed')"
+        (click)="toggleFilter('Completed')" class="filter-chip chip-completed">
+        🏠 Completed
+      </button>
+      <button mat-stroked-button
+        [class.filter-active-construction]="activeFilters().includes('Underconstruction')"
+        (click)="toggleFilter('Underconstruction')" class="filter-chip chip-construction">
+        🏗️ Under Construction
+      </button>
+      <button mat-stroked-button
+        [class.filter-active-empty]="activeFilters().includes('Empty')"
+        (click)="toggleFilter('Empty')" class="filter-chip chip-empty">
+        🍃 Empty Ground
+      </button>
+    </div>
+
+    <!-- 3. Primary Table Action Control Buttons -->
+    <div class="action-btn-row">
+      <button mat-flat-button color="primary" class="flex-fill blue-btn" (click)="toggleTabularRegistry(true)">
+        📋 Open Tabular Grid
+      </button>
+      <button mat-stroked-button color="accent" class="flex-fill" (click)="shareStatementViaWhatsApp()">
+        📢 WhatsApp Summary
+      </button>
+    </div>
+  </div>
+
+  <!-- SELECTED STATUS CONTEXT MATRICES BANNER -->
+  <mat-card class="dues-alert-card">
+    <span class="alert-meta-title">MATCHING FILTER TOTAL DUES</span>
+    <h2 class="alert-dues-amount">₹{{totalHistoricalPending()}}</h2>
+  </mat-card>
+
+  <!-- RENDER INVENTORY ITEMS MATRIX GRID -->
+  @for (item of plotBreakdown(); track item.plot.plotNumber) {
+    <mat-card class="plot-item-card">
+      <div class="flex-space-between align-center">
+        <div>
+          <h4 (click)="openPlotLedger(item.plot.plotNumber)" class="plot-link-title">
+            Plot #{{item.plot.plotNumber}}
+          </h4>
+          <div class="plot-meta-desc">
+            {{item.plot.ownerName}} • <span class="size-text">{{item.plot.size || 0}} sqft</span>
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="status-badge"
+                [style.background]="item.currentMonthStatus === 'Fully Paid' ? '#e6f4ea' : item.currentMonthStatus === 'Partially Paid' ? '#fff3cd' : '#fce8e6'"
+                [style.color]="item.currentMonthStatus === 'Fully Paid' ? '#10b981' : item.currentMonthStatus === 'Partially Paid' ? '#d97706' : '#ef4444'">
+            {{item.currentMonthStatus}}
+          </span>
+          <div class="debt-balance">Balance: ₹{{item.accumulatedPending}}</div>
+        </div>
+      </div>
+    </mat-card>
+  } @empty {
+    <div class="empty-state-msg pad-vertical">
+      No ledger listings match your current filter settings.
+    </div>
+  }
+
+  <!-- TABULAR REGISTRY FULL OVERLAY SCREEN MODAL -->
+  @if (showTabularRegistry()) {
+    <div class="fullscreen-overlay-modal">
+      <div class="modal-header-row">
+        <div>
+          <h3 class="modal-title">Filtered Registry Table</h3>
+          <span class="modal-subtitle">Target Assessment Month: <b>{{ currentMonth }}</b></span>
+        </div>
+        <button mat-stroked-button color="warn" (click)="toggleTabularRegistry(false)">Close Grid</button>
+      </div>
+
+      <div class="modal-metrics-strip">
+        <div><span class="strip-label">MONTHLY PAID</span><br><b class="strip-val text-green">₹{{monthlyMetrics().paid}}</b></div>
+        <div><span class="strip-label">MONTHLY EXPENSE</span><br><b class="strip-val text-red">₹{{monthlyMetrics().expense}}</b></div>
+      </div>
+
+      <button mat-flat-button color="primary" class="full-width whatsapp-green-btn" (click)="shareTabularRegistryViaWhatsApp()">
+        🟢 Share Filtered Grid via WhatsApp
+      </button>
+
+      <div class="scrollable-table-wrapper">
+        <table class="registry-data-table">
+          <thead>
+            <tr>
+              <th>Plot</th>
+              <th>Owner Info</th>
+              <th class="text-right">Paid</th>
+              <th class="text-right">Due</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of tabularRegistryData(); track row.plotNumber) {
+              <tr>
+                <td class="table-plot-cell">#{{ row.plotNumber }} <span class="table-size-span"><br>({{row.size}} sqft)</span></td>
+                <td>
+                  <div class="table-owner-name">{{ row.ownerName }}</div>
+                  <div class="table-owner-phone">{{ row.phone }}</div>
+                </td>
+                <td class="text-right table-paid-amt">₹{{ row.amountPaid }}</td>
+                <td class="text-right table-due-amt" [style.color]="row.amountDue > 0 ? '#dc2626' : '#64748b'">
+                  ₹{{ row.amountDue }}
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="table-empty-fallback">No plots match applied criteria.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- HISTORICAL LEDGER OVERLAY MODAL -->
+  @if (selectedPlotNumber()) {
+    <div class="fullscreen-overlay-modal layered-z">
+      <div class="modal-header-row">
+        <h3 class="ledger-header-title">Ledger History: Plot #{{selectedPlotNumber()}}</h3>
+        <button mat-stroked-button color="warn" (click)="closePlotLedger()">Close View</button>
+      </div>
+      <div class="flex-scroll-viewport">
+        <mat-nav-list>
+          @for (ledgerItem of targetPlotLedgerHistory(); track ledgerItem.id) {
+            <mat-list-item class="ledger-list-item">
+              <div class="flex-space-between align-center full-width">
+                <div>
+                  <span class="ledger-cycle-text">Cycle Period: {{ledgerItem.month}}</span>
+                  <div class="ledger-date-text">Logged Date: {{ledgerItem.date}}</div>
+                </div>
+                <b class="ledger-amount-val">₹{{ledgerItem.amount}}</b>
+              </div>
+            </mat-list-item>
+          } @empty {
+            <div class="empty-state-msg pad-vertical">No ledger receipts found.</div>
+          }
+        </mat-nav-list>
+      </div>
+    </div>
+  }
+</div>

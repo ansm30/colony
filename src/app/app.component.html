@@ -1,0 +1,27 @@
+<div class="app-view-wrapper" style="max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 80px; box-sizing: border-box; background-color: #f5f5f5; position: relative;">
+  <mat-toolbar color="primary" class="mat-elevation-z3">
+    <span>Colony ERP Hub</span>
+  </mat-toolbar>
+
+  <main class="content-body">
+    @if (activeTab() === 'dashboard') {
+      <app-dashboard [plots]="allPlots()"></app-dashboard>
+    }
+    @if (activeTab() === 'payment') {
+      <app-payments [plots]="allPlots()"></app-payments>
+    }
+    @if (activeTab() === 'expense') {
+      <app-expenses></app-expenses>
+    }
+    @if (activeTab() === 'setup') {
+      <app-setup [plots]="allPlots()"></app-setup>
+    }
+  </main>
+
+  <nav class="mat-elevation-z6" style="position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 8px 0; max-width: 480px; margin: 0 auto; z-index: 999;">
+    <button mat-button (click)="activeTab.set('dashboard')" [color]="activeTab() === 'dashboard' ? 'primary' : ''">📊 Dash</button>
+    <button mat-button (click)="activeTab.set('payment')" [color]="activeTab() === 'payment' ? 'primary' : ''">💸 Pay</button>
+    <button mat-button (click)="activeTab.set('expense')" [color]="activeTab() === 'expense' ? 'primary' : ''">📉 Exp</button>
+    <button mat-button (click)="activeTab.set('setup')" [color]="activeTab() === 'setup' ? 'primary' : ''">⚙ Setup</button>
+  </nav>
+</div>

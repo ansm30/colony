@@ -1,0 +1,139 @@
+<div style="padding: 16px; display: flex; flex-direction: column; gap: 16px; position: relative;">
+
+  <!-- INNER COMPONENT LAYER BOUNDED EXCLUSIVE FADE DIALOG PANEL -->
+  @if (showSuccess()) {
+    <div style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(71, 85, 105, 0.94); backdrop-filter: blur(6px); z-index: 9999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; text-align:center; border-radius: 8px;">
+      <span style="font-size: 56px; margin-bottom: 12px;">⚙</span>
+      <h2 style="font-size: 20px; margin: 0; font-weight: 500;">Configuration Updated</h2>
+      <p style="font-size: 12px; opacity: 0.7; margin-top: 4px;">Dynamic record engines reconstructed.</p>
+    </div>
+  }
+
+  <!-- PLOT HISTORICAL ACCOUNTING DETAIL PANEL MODAL VIEW FOR SETUP -->
+  @if (selectedPlotNumber()) {
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 5000; padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+        <h3 style="margin: 0; color: #475569;">Payment Streams: Plot #{{selectedPlotNumber()}}</h3>
+        <button mat-flat-button color="warn" (click)="closePlotLedger()">Dismiss</button>
+      </div>
+
+      <div style="flex: 1; overflow-y: auto;">
+        <mat-nav-list>
+          @for (ledgerItem of setupPlotLedgerHistory(); track ledgerItem.id) {
+            <mat-list-item style="height: auto; border-bottom: 1px solid #f1f5f9; padding: 8px 0;">
+              <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                <div>
+                  <span style="font-weight: 600;">Cycle: {{ledgerItem.month}}</span>
+                  <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Recorded: {{ledgerItem.date}}</div>
+                </div>
+                <b style="color: #10b981; font-size: 15px;">₹{{ledgerItem.amount}}</b>
+              </div>
+            </mat-list-item>
+          } @empty {
+            <div style="text-align: center; color: #94a3b8; padding: 32px 0;">No active matching transaction records available.</div>
+          }
+        </mat-nav-list>
+      </div>
+    </div>
+  }
+
+  <mat-card style="padding: 16px;">
+    <h3 style="margin: 0 0 16px 0; color: #475569; font-weight: 500;">
+      {{ isEditing() ? 'Modify Profile: Plot #' + form.plotNumber : 'Register Plot Profile' }}
+    </h3>
+
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Plot Reference ID Number</mat-label>
+        <input matInput [(ngModel)]="form.plotNumber" [disabled]="isEditing()" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Owner Full Name</mat-label>
+        <input matInput [(ngModel)]="form.ownerName" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Mobile Phone Contact</mat-label>
+        <input matInput [(ngModel)]="form.phone" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Email Address</mat-label>
+        <input matInput type="email" [(ngModel)]="form.email" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Plot Size</mat-label>
+        <input matInput type="nuumber" [(ngModel)]="form.size" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Standard Monthly Rate (₹)</mat-label>
+        <input matInput type="number" [(ngModel)]="form.currentRate" />
+      </mat-form-field>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <mat-form-field appearance="outline" style="flex: 1;">
+          <mat-label>Classification</mat-label>
+          <mat-select [(ngModel)]="form.type">
+            <mat-option value="Others">Others</mat-option>
+            <mat-option value="LIG">LIG</mat-option>
+            <mat-option value="EWS">EWS</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" style="flex: 1;">
+          <mat-label>Status</mat-label>
+          <mat-select [(ngModel)]="form.status">
+            <mat-option value="Completed">Completed</mat-option>
+            <mat-option value="Empty">Empty Land</mat-option>
+            <mat-option value="Underconstruction">Underconstruction</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      @if (isEditing()) {
+        <div style="background: #fffbeb; border: 1px solid #fef3c7; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+          <label style="font-size: 11px; font-weight: 600; color: #b45309; display: block; margin-bottom: 6px;">Log Historical Rate Exception?</label>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <input type="month" [(ngModel)]="historicalLogMonth" style="padding: 6px; border: 1px solid #ccc; font-family: inherit; font-size: 12px; flex: 1.5;" />
+            <input type="number" [(ngModel)]="historicalLogRate" placeholder="Rate" style="padding: 6px; border: 1px solid #ccc; font-family: inherit; font-size: 12px; width: 60px;" />
+            <button mat-flat-button color="accent" style="height: 32px; font-size: 11px;" (click)="appendHistoricalMonthOverride()">Lock</button>
+          </div>
+        </div>
+      }
+
+      <div style="display: flex; gap: 8px;">
+        <button mat-raised-button color="primary" style="flex: 2; padding: 10px 0;" (click)="save()">
+          Save Profile
+        </button>
+        @if (isEditing()) {
+          <button mat-stroked-button style="flex: 1;" (click)="cancel()">Cancel</button>
+        }
+      </div>
+    </div>
+  </mat-card>
+
+  <mat-card style="padding: 16px;">
+    <h3 style="margin: 0 0 12px 0; font-weight: 500; font-size: 15px;">Configured Plots Inventory ({{plots.length}})</h3>
+    <mat-nav-list>
+      @for (p of getSortedPlots(); track p.id) {
+        <mat-list-item style="height: auto; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
+          <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+            <div>
+              <span (click)="openPlotLedger(p.plotNumber)" style="font-weight: 600; font-size: 14px; color: #2563eb; cursor: pointer; text-decoration: underline;">
+                Plot #{{p.plotNumber}}
+              </span>
+              <span style="font-size: 10px; background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">{{p.status}}</span>
+              <div style="font-size: 12px; color: #475569; margin-top: 2px;">Owner: {{p.ownerName}}</div>
+            </div>
+            <button mat-stroked-button color="primary" style="height: 32px; font-size: 12px; padding: 0 12px;" (click)="startEdit(p)">
+              Edit
+            </button>
+          </div>
+        </mat-list-item>
+      }
+    </mat-nav-list>
+  </mat-card>
+</div>
