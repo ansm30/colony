@@ -8,6 +8,7 @@ import { DashboardComponent } from './dashboard/dashboard.component';
 import { PaymentsComponent } from './payments/payments.component';
 import { ExpensesComponent } from './expenses/expenses.component';
 import { SetupComponent } from './setup/setup.component';
+import { NotificationService } from './notification.service';
 
 @Component({
   selector: 'app-root',
@@ -21,6 +22,7 @@ import { SetupComponent } from './setup/setup.component';
 })
 export class AppComponent implements OnInit {
   private colonyService = inject(ColonyService);
+  public notificationService = inject(NotificationService)
   activeTab = signal<'dashboard' | 'payment' | 'expense' | 'setup'>('dashboard');
   allPlots = signal<any[]>([]);
 

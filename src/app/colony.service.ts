@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, onSnapshot, addDoc, doc, updateDoc, query, where } from '@angular/fire/firestore';
+import { Firestore, collection, onSnapshot, doc, updateDoc, query, where, writeBatch } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 
 export interface PlotMonthConfig {
@@ -17,18 +17,18 @@ export interface Plot {
   status: 'Completed' | 'Empty' | 'Underconstruction';
   size: number;
   currentRate: number;
-  outstandingDues: number; // High-performance tracking balance
-  history?: { [month: string]: PlotMonthConfig };
+  outstandingDues: number; // Checked directly by the dashboard now
+  history?: { [month: string]: PlotMonthConfig};
 }
 
 export interface Payment {
   id?: string;
   plotNumber: string;
   amount: number;
-  month: string; // e.g., '2026-07'
-  date: string;  // e.g., '2026-07-20'
-  method: 'UPI' | 'Cash' | 'Bank Transfer' | string; // 👈 Added
-  remark?: string; // 👈 Added
+  month: string;
+  date: string;
+  method: string;
+  remark?: string;
 }
 
 export interface Expense {
@@ -37,46 +37,46 @@ export interface Expense {
   amount: number;
   month: string;
   date: string;
-  remark?: string; // 👈 Added
+  remark?: string;
 }
 
 export interface FinancialSummary { totalCollected: number; totalSpent: number; }
+export interface BillingMetadata { generatedMonths: string[]; }
 
 @Injectable({ providedIn: 'root' })
 export class ColonyService {
   private firestore = inject(Firestore);
 
-  /**
-   * Generates a local-timezone YYYY-MM string for HTML month inputs
-   */
   getCurrentMonth(): string {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }
 
-  /**
-   * Generates a local-timezone YYYY-MM-DD string for HTML date inputs
-   */
   getCurrentDate(): string {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   }
 
-  // 1. High-Performance Cost-Free Summary Indicators
   getFinancialSummary(): Observable<FinancialSummary> {
     return new Observable<FinancialSummary>(subscriber => {
       const unsubscribe = onSnapshot(doc(this.firestore, 'metadata', 'financials'), (snap) => {
-        if (snap.exists()) {
-          subscriber.next(snap.data() as FinancialSummary);
-        } else {
-          subscriber.next({ totalCollected: 0, totalSpent: 0 });
-        }
+        if (snap.exists()) subscriber.next(snap.data() as FinancialSummary);
+        else subscriber.next({ totalCollected: 0, totalSpent: 0 });
       }, (err) => subscriber.error(err));
       return () => unsubscribe();
     });
   }
 
-  // 2. Structural Collections Sync
+  getBillingMetadata(): Observable<BillingMetadata> {
+    return new Observable<BillingMetadata>(subscriber => {
+      const unsubscribe = onSnapshot(doc(this.firestore, 'metadata', 'billing'), (snap) => {
+        if (snap.exists()) subscriber.next(snap.data() as BillingMetadata);
+        else subscriber.next({ generatedMonths: [] });
+      }, (err) => subscriber.error(err));
+      return () => unsubscribe();
+    });
+  }
+
   getPlots(): Observable<Plot[]> {
     return new Observable<Plot[]>(subscriber => {
       const unsubscribe = onSnapshot(collection(this.firestore, 'plots'), (snap) => {
@@ -86,7 +86,6 @@ export class ColonyService {
     });
   }
 
-  // 3. Lightweight Filtered Queries (Month-by-Month)
   getPaymentsByMonth(monthStr: string): Observable<Payment[]> {
     return new Observable<Payment[]>(subscriber => {
       const q = query(collection(this.firestore, 'payments'), where('month', '==', monthStr));
@@ -107,7 +106,6 @@ export class ColonyService {
     });
   }
 
-  // 4. Fallback Full Historical Syncs (Restored for Setup/Payment modules)
   getAllPayments(): Observable<Payment[]> {
     return new Observable<Payment[]>(subscriber => {
       const unsubscribe = onSnapshot(collection(this.firestore, 'payments'), (snap) => {
@@ -117,30 +115,67 @@ export class ColonyService {
     });
   }
 
-  // 5. Rate Management Utilities
-  getExpectedRateForMonth(plot: Plot, monthStr: string): number {
-    if (plot.history && plot.history[monthStr]) return plot.history[monthStr].rate;
-    if (plot.status === 'Empty') return 500;
-    return plot.currentRate || 800;
+  // Transaction engine: Adds payment ledger doc and securely decrements plot dues
+  async addPaymentTransaction(payment: Payment, plotDocId: string, currentDues: number) {
+    const batch = writeBatch(this.firestore);
+    const newPaymentRef = doc(collection(this.firestore, 'payments'));
+
+    batch.set(newPaymentRef, payment);
+
+    const plotRef = doc(this.firestore, 'plots', plotDocId);
+    const updatedDues = Math.max(0, currentDues - payment.amount);
+    batch.update(plotRef, { outstandingDues: updatedDues });
+
+    await batch.commit();
   }
 
-  getHistoricalMonths(targetMonthStr: string = '2026-07'): string[] {
-    const months: string[] = [];
-    let year = 2026;
-    let month = 3;
-    const [targetYear, targetMonth] = targetMonthStr.split('-').map(Number);
+  // Monthly lock transaction engine: Adds dues dynamically and seals the month log
+  async generateMonthlyDuesBatch(
+    monthStr: string,
+    rates: { EWS: number; LIG: number; Empty: number; Others: number; },
+    plotsList: Plot[],
+    alreadyGenerated: string[]
+  ) {
+    const batch = writeBatch(this.firestore);
 
-    while (year < targetYear || (year === targetYear && month <= targetMonth)) {
-      months.push(`${year}-${month.toString().padStart(2, '0')}`);
-      month++;
-      if (month > 12) { month = 1; year++; }
-    }
-    return months;
+    plotsList.forEach(p => {
+      if (!p.id) return;
+      let billAmount = rates.Others;
+
+      if (p.status === 'Empty') billAmount = rates.Empty;
+      else if (p.type === 'EWS') billAmount = rates.EWS;
+      else if (p.type === 'LIG') billAmount = rates.LIG;
+
+      const plotRef = doc(this.firestore, 'plots', p.id);
+      batch.update(plotRef, { outstandingDues: (p.outstandingDues || 0) + billAmount });
+    });
+
+    const billingRef = doc(this.firestore, 'metadata', 'billing');
+    batch.set(billingRef, { generatedMonths: [...alreadyGenerated, monthStr] });
+
+    await batch.commit();
   }
 
-  // 6. Data Mutation Engines (Restored for Form Actions)
-  addPlot(plot: Plot) { return addDoc(collection(this.firestore, 'plots'), plot); }
-  updatePlot(id: string, plot: Partial<Plot>) { return updateDoc(doc(this.firestore, 'plots', id), plot); }
-  addPayment(payment: Payment) { return addDoc(collection(this.firestore, 'payments'), payment); }
-  addExpense(expense: Expense) { return addDoc(collection(this.firestore, 'expenses'), expense); }
+  // Used during plot registration initialization setup
+  addPlot(plot: Plot) {
+    const newPlotRef = doc(collection(this.firestore, 'plots'));
+    const batch = writeBatch(this.firestore);
+    batch.set(newPlotRef, plot);
+    return batch.commit();
+  }
+
+  updatePlot(id: string, plot: Partial<Plot>) {
+    return updateDoc(doc(this.firestore, 'plots', id), plot);
+  }
+
+  addExpense(expense: Expense) {
+    const newExpenseRef = doc(collection(this.firestore, 'expenses'));
+    const batch = writeBatch(this.firestore);
+    batch.set(newExpenseRef, expense);
+    return batch.commit();
+  }
+
+  updateBillingMetadata(months: string[]): Promise<void> {
+    return updateDoc(doc(this.firestore, 'metadata', 'billing'), { generatedMonths: months });
+  }
 }

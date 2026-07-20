@@ -6,6 +6,44 @@
     <span class="badge-label">DASHBOARD</span>
   </div>
 
+  <!-- DYNAMIC MONTHLY DUE GENERATOR CONSOLE -->
+  @if (!isMonthBilled()) {
+    <mat-card class="health-card" style="border: 2px dashed #3b82f6; margin-bottom: 20px;">
+      <div class="card-header-row">
+        <h3 class="card-section-title" style="color: #2563eb;">⚡ Post Monthly Maintenance Dues</h3>
+        <span style="font-size: 12px; color: #64748b;">Cycle: {{ currentMonth }}</span>
+      </div>
+      <p style="font-size: 13px; margin: 0 0 16px 0; color: #475569;">
+        Dues have not been initialized for this month yet. Review the standard category rules below, then click generate to append values to all plot portfolios.
+      </p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 16px;">
+        <div>
+          <label style="font-size: 11px; font-weight: bold; color: #475569;">EWS RATE</label>
+          <input type="number" [(ngModel)]="rateEWS" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px;" />
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: bold; color: #475569;">LIG RATE</label>
+          <input type="number" [(ngModel)]="rateLIG" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px;" />
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: bold; color: #475569;">EMPTY PLOT</label>
+          <input type="number" [(ngModel)]="rateEmpty" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px;" />
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: bold; color: #475569;">OTHERS RATE</label>
+          <input type="number" [(ngModel)]="rateOthers" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px;" />
+        </div>
+      </div>
+      <button mat-flat-button color="primary" style="width: 100%; background-color: #2563eb; z-index: 99999;" (click)="triggerMonthlyBillingGeneration()">
+        🚀 Post Dues to All Colony Plots
+      </button>
+    </mat-card>
+  } @else {
+    <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; padding: 12px; border-radius: 6px; text-align: center; color: #065f46; font-size: 13px; font-weight: 500; margin-bottom: 20px;">
+      🔒 Monthly Dues Generated for {{ currentMonth }}. Portfolio balances are locked against double-entry.
+    </div>
+  }
+
   <!-- PERSISTENT CASH IN HAND AVAILABLE BALANCE COUNTER -->
   <mat-card class="balance-card">
     <div class="balance-header">
@@ -33,7 +71,7 @@
         <b class="metric-value text-red">₹{{monthlyMetrics().expense}}</b>
       </div>
       <div class="metric-block">
-        <span class="metric-label">MONTH GAP</span>
+        <span class="metric-label">TOTAL REMAINING OWD</span>
         <b class="metric-value text-orange">₹{{monthlyMetrics().pending}}</b>
       </div>
     </div>
@@ -80,62 +118,26 @@
     </mat-tab-group>
   </mat-card>
 
-  <!-- MOVED HERE: UNIFIED SEARCH, FILTER BUTTONS & TABULAR CONTROLS WORKSPACE PANEL -->
+  <!-- UNIFIED SEARCH, FILTER BUTTONS & TABULAR CONTROLS WORKSPACE PANEL -->
   <div class="console-panel">
-
-    <!-- 1. Text Search Box -->
     <mat-form-field appearance="outline" class="full-width dense-form-field">
       <mat-label>Search plots...</mat-label>
       <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Type plot number or name..." />
     </mat-form-field>
 
-    <!-- 2. Multi-Select Quick Filter Button Array -->
     <div class="filter-chip-group">
-      <button mat-stroked-button
-        [class.filter-active-paid]="activeFilters().includes('Paid')"
-        (click)="toggleFilter('Paid')" class="filter-chip chip-paid">
-        ✅ Fully Paid
-      </button>
-      <button mat-stroked-button
-        [class.filter-active-partial]="activeFilters().includes('Partial')"
-        (click)="toggleFilter('Partial')" class="filter-chip chip-partial">
-        ⏳ Partially Paid
-      </button>
-      <button mat-stroked-button
-        [class.filter-active-pending]="activeFilters().includes('Pending')"
-        (click)="toggleFilter('Pending')" class="filter-chip chip-pending">
-        ❌ Unpaid This Month
-      </button>
-      <button mat-stroked-button
-        [class.filter-active-dues]="activeFilters().includes('Dues')"
-        (click)="toggleFilter('Dues')" class="filter-chip chip-dues">
-        ⚠️ Has Past Dues
-      </button>
-      <button mat-stroked-button
-        [class.filter-active-completed]="activeFilters().includes('Completed')"
-        (click)="toggleFilter('Completed')" class="filter-chip chip-completed">
-        🏠 Completed
-      </button>
-      <button mat-stroked-button
-        [class.filter-active-construction]="activeFilters().includes('Underconstruction')"
-        (click)="toggleFilter('Underconstruction')" class="filter-chip chip-construction">
-        🏗️ Under Construction
-      </button>
-      <button mat-stroked-button
-        [class.filter-active-empty]="activeFilters().includes('Empty')"
-        (click)="toggleFilter('Empty')" class="filter-chip chip-empty">
-        🍃 Empty Ground
-      </button>
+      <button mat-stroked-button [class.filter-active-paid]="activeFilters().includes('Paid')" (click)="toggleFilter('Paid')" class="filter-chip chip-paid">✅ Fully Paid</button>
+      <button mat-stroked-button [class.filter-active-partial]="activeFilters().includes('Partial')" (click)="toggleFilter('Partial')" class="filter-chip chip-partial">⏳ Partially Paid</button>
+      <button mat-stroked-button [class.filter-active-pending]="activeFilters().includes('Pending')" (click)="toggleFilter('Pending')" class="filter-chip chip-pending">❌ Unpaid</button>
+      <button mat-stroked-button [class.filter-active-dues]="activeFilters().includes('Dues')" (click)="toggleFilter('Dues')" class="filter-chip chip-dues">⚠️ Has Past Dues</button>
+      <button mat-stroked-button [class.filter-active-completed]="activeFilters().includes('Completed')" (click)="toggleFilter('Completed')" class="filter-chip chip-completed">🏠 Completed</button>
+      <button mat-stroked-button [class.filter-active-construction]="activeFilters().includes('Underconstruction')" (click)="toggleFilter('Underconstruction')" class="filter-chip chip-construction">🏗️ Under Construction</button>
+      <button mat-stroked-button [class.filter-active-empty]="activeFilters().includes('Empty')" (click)="toggleFilter('Empty')" class="filter-chip chip-empty">🍃 Empty Ground</button>
     </div>
 
-    <!-- 3. Primary Table Action Control Buttons -->
     <div class="action-btn-row">
-      <button mat-flat-button color="primary" class="flex-fill blue-btn" (click)="toggleTabularRegistry(true)">
-        📋 Open Tabular Grid
-      </button>
-      <button mat-stroked-button color="accent" class="flex-fill" (click)="shareStatementViaWhatsApp()">
-        📢 WhatsApp Summary
-      </button>
+      <button mat-flat-button color="primary" class="flex-fill blue-btn" (click)="toggleTabularRegistry(true)">📋 Open Tabular Grid</button>
+      <button mat-stroked-button color="accent" class="flex-fill" (click)="shareStatementViaWhatsApp()">📢 WhatsApp Summary</button>
     </div>
   </div>
 
@@ -150,11 +152,9 @@
     <mat-card class="plot-item-card">
       <div class="flex-space-between align-center">
         <div>
-          <h4 (click)="openPlotLedger(item.plot.plotNumber)" class="plot-link-title">
-            Plot #{{item.plot.plotNumber}}
-          </h4>
+          <h4 (click)="openPlotLedger(item.plot.plotNumber)" class="plot-link-title">Plot #{{item.plot.plotNumber}}</h4>
           <div class="plot-meta-desc">
-            {{item.plot.ownerName}} • <span class="size-text">{{item.plot.size || 0}} sqft</span>
+            {{item.plot.ownerName}} • <span class="size-text">{{item.plot.size || 0}} sqft</span> • <span style="font-weight: bold; color: #475569;">{{item.plot.type}}</span>
           </div>
         </div>
         <div class="text-right">
@@ -168,50 +168,54 @@
       </div>
     </mat-card>
   } @empty {
-    <div class="empty-state-msg pad-vertical">
-      No ledger listings match your current filter settings.
-    </div>
+    <div class="empty-state-msg pad-vertical">No ledger listings match your current filter settings.</div>
   }
 
   <!-- TABULAR REGISTRY FULL OVERLAY SCREEN MODAL -->
-  @if (showTabularRegistry()) {
-    <div style="flex: 1; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
-        <table class="registry-data-table">
+<!-- TABULAR REGISTRY FULL OVERLAY SCREEN MODAL -->
+@if (showTabularRegistry()) {
+  <!-- Added fullscreen overlay styling so it opens right on top, instantly visible -->
+  <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+
+    <div style="background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 900px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+
+      <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+        <h3 style="margin:0; font-weight: bold; color: #1e293b; font-size: 18px;">📋 Spreadsheet Registry Summary</h3>
+        <button mat-flat-button color="warn" style="height: 32px; line-height: 32px;" (click)="toggleTabularRegistry(false)">Close Grid</button>
+      </div>
+
+      <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+        <table class="registry-data-table" style="width: 100%; border-collapse: collapse;">
+          <!-- ... Your existing <thead> and <tbody> loops stay exactly the same ... -->
           <thead>
-            <tr>
-              <th>Plot</th>
-              <th>Owner Info</th>
-              <th>Payment Log</th> <!-- 👈 Added Header Column -->
-              <th class="text-right">Paid</th>
-              <th class="text-right">Due</th>
+            <tr style="background-color: #f8fafc; text-align: left;">
+              <th style="padding: 10px;">Plot</th>
+              <th style="padding: 10px;">Owner Info</th>
+              <th style="padding: 10px;">Payment Log</th>
+              <th style="padding: 10px;" class="text-right">Paid</th>
+              <th style="padding: 10px;" class="text-right">Due</th>
             </tr>
           </thead>
           <tbody>
             @for (row of tabularRegistryData(); track row.plotNumber) {
-              <tr>
-                <td class="table-plot-cell">#{{ row.plotNumber }} <span class="table-size-span"><br>({{row.size}} sqft)</span></td>
-                <td>
+              <tr style="border-top: 1px solid #e2e8f0;">
+                <td style="padding: 10px;" class="table-plot-cell">#{{ row.plotNumber }} <br><span style="font-size:10px; color:#64748b;">({{row.size}} sqft)</span></td>
+                <td style="padding: 10px;">
                   <div class="table-owner-name">{{ row.ownerName }}</div>
                   <div class="table-owner-phone">{{ row.phone }}</div>
                 </td>
-                <!-- 👇 Added Data Cell for Dates & Methods -->
-                <td style="color: #475569; font-size: 11px; max-width: 180px; white-space: normal; word-break: break-word;">
-                  {{ row.paymentDetails }}
-                </td>
-                <td class="text-right table-paid-amt">₹{{ row.amountPaid }}</td>
-                <td class="text-right table-due-amt" [style.color]="row.amountDue > 0 ? '#dc2626' : '#64748b'">
-                  ₹{{ row.amountDue }}
-                </td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="5" class="table-empty-fallback">No plots match applied criteria.</td> <!-- Adjusted colspan to 5 -->
+                <td style="padding: 10px; color: #475569; font-size: 11px;">{{ row.paymentDetails }}</td>
+                <td style="padding: 10px;" class="text-right table-paid-amt">₹{{ row.amountPaid }}</td>
+                <td style="padding: 10px;" class="text-right table-due-amt" [style.color]="row.amountDue > 0 ? '#dc2626' : '#64748b'">₹{{ row.amountDue }}</td>
               </tr>
             }
           </tbody>
         </table>
       </div>
-  }
+
+    </div>
+  </div>
+}
 
   <!-- HISTORICAL LEDGER OVERLAY MODAL -->
   @if (selectedPlotNumber()) {

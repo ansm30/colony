@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
+import { NotificationService } from '../notification.service';
 
 @Component({
   selector: 'app-payments',
@@ -18,6 +19,7 @@ import { MatListModule } from '@angular/material/list';
 export class PaymentsComponent implements OnInit {
   @Input() plots: Plot[] = [];
   private colonyService = inject(ColonyService);
+  private notify = inject(NotificationService);
 
   form = {
     plotNumber: '',
@@ -62,14 +64,21 @@ export class PaymentsComponent implements OnInit {
   autoFillRate() {
     const found = this.plots.find(p => p.plotNumber === this.form.plotNumber);
     if (found) {
-      this.form.amount = this.colonyService.getExpectedRateForMonth(found, this.form.month);
+      this.form.amount = found.outstandingDues || 0;
     }
   }
 
+  // Inside your payments.component.ts save processing interceptor:
   save() {
     if (!this.form.plotNumber || !this.form.amount) return;
 
-    // Explicitly mapping all properties from the form object into the Firestore request payload
+    // 1. Locate the live reference object from the database array
+    const matchedPlot = this.plots.find(p => p.plotNumber === this.form.plotNumber);
+    if (!matchedPlot || !matchedPlot.id) {
+      this.notify.showError('Error: Plot reference sequence not found in configuration list.');
+      return;
+    }
+
     const paymentPayload: Payment = {
       plotNumber: this.form.plotNumber,
       amount: this.form.amount,
@@ -79,13 +88,15 @@ export class PaymentsComponent implements OnInit {
       remark: this.form.remark || undefined
     };
 
-    this.colonyService.addPayment(paymentPayload).then(() => {
-      this.lastSavedPayment.set(paymentPayload);
-      this.showSuccess.set(true);
-      this.form = { plotNumber: '', amount: 0, month: this.colonyService.getCurrentMonth(), date: this.colonyService.getCurrentDate(), method: 'UPI', remark: '' };
+    // 2. Fire atomic operation passing database ID and running dues balance
+    this.colonyService.addPaymentTransaction(
+      paymentPayload,
+      matchedPlot.id,
+      matchedPlot.outstandingDues || 0
+    ).then(() => {
+      this.notify.showSuccess('Payment synchronized and outstanding balance reduced successfully.');
     });
   }
-
   whatsappMeReceipt() {
     if (!this.lastSavedPayment()) return;
     const p = this.lastSavedPayment();

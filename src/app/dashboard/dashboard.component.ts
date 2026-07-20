@@ -1,7 +1,7 @@
-import { Component, Input, OnInit, computed, signal, inject } from '@angular/core';
+import { Component, Input, OnInit, computed, signal, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ColonyService, Plot, Payment, Expense, FinancialSummary } from '../colony.service';
+import { ColonyService, Plot, Payment, Expense, FinancialSummary, BillingMetadata } from '../colony.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -10,6 +10,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
 import { Subscription } from 'rxjs';
+import { NotificationService } from '../notification.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -21,8 +22,8 @@ import { Subscription } from 'rxjs';
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent implements OnInit {
-  @Input() plots: Plot[] = [];
+export class DashboardComponent implements OnInit, OnDestroy {
+
   colonyService = inject(ColonyService);
 
   currentMonth = this.colonyService.getCurrentMonth();
@@ -30,17 +31,34 @@ export class DashboardComponent implements OnInit {
   activeFilters = signal<string[]>([]);
 
   financialSummary = signal<FinancialSummary>({ totalCollected: 0, totalSpent: 0 });
+  billingMetadata = signal<BillingMetadata>({ generatedMonths: [] });
   globalPayments = signal<Payment[]>([]);
   scopedPayments = signal<Payment[]>([]);
   scopedExpenses = signal<Expense[]>([]);
 
+  private _plots = signal<Plot[]>([]);
+
+  @Input() set plots(value: Plot[]) {
+    this._plots.set(value || []);
+  }
+  get plots(): Plot[] {
+    return this._plots();
+  }
+
+  // Category Dues Form Workspace Setup Panel
+  rateEWS = 600;
+  rateLIG = 600;
+  rateEmpty = 500;
+  rateOthers = 800;
+
   selectedPlotNumber = signal<string | null>(null);
   showTabularRegistry = signal<boolean>(false);
-
   private subs = new Subscription();
+  private notify = inject(NotificationService);
 
   ngOnInit() {
     this.subs.add(this.colonyService.getFinancialSummary().subscribe(data => this.financialSummary.set(data)));
+    this.subs.add(this.colonyService.getBillingMetadata().subscribe(data => this.billingMetadata.set(data)));
     this.subs.add(this.colonyService.getAllPayments().subscribe(data => this.globalPayments.set(data)));
     this.syncSelectedMonthData();
   }
@@ -59,6 +77,35 @@ export class DashboardComponent implements OnInit {
     }));
   }
 
+  // Checks if dues have already been initialized for the current month view
+  isMonthBilled = computed(() => {
+    return this.billingMetadata().generatedMonths.includes(this.currentMonth);
+  });
+
+  async triggerMonthlyBillingGeneration() {
+    if (this.isMonthBilled()) return;
+
+    const ratesPayload = {
+      EWS: this.rateEWS,
+      LIG: this.rateLIG,
+      Empty: this.rateEmpty,
+      Others: this.rateOthers
+    };
+
+    try {
+      await this.colonyService.generateMonthlyDuesBatch(
+        this.currentMonth,
+        ratesPayload,
+        this.plots,
+        this.billingMetadata().generatedMonths
+      );
+      this.notify.showSuccess(`Cycle ${this.currentMonth} unlocked successfully!`);
+    } catch (err) {
+      console.error(err);
+      this.notify.showError('Failed to post monthly dues. Check database permissions.');
+    }
+  }
+
   totalNetCashBalance = computed(() => {
     return this.financialSummary().totalCollected - this.financialSummary().totalSpent;
   });
@@ -66,13 +113,7 @@ export class DashboardComponent implements OnInit {
   monthlyMetrics = computed(() => {
     let paid = this.scopedPayments().reduce((sum, item) => sum + item.amount, 0);
     let expenseValue = this.scopedExpenses().reduce((sum, item) => sum + item.amount, 0);
-
-    let pending = 0;
-    this.plots.forEach(p => {
-      const collected = this.scopedPayments().filter(pay => pay.plotNumber === p.plotNumber).reduce((sum, item) => sum + item.amount, 0);
-      const expected = this.colonyService.getExpectedRateForMonth(p, this.currentMonth);
-      if (collected < expected) pending += (expected - collected);
-    });
+    let pending = this._plots().reduce((sum, p) => sum + (p.outstandingDues || 0), 0); // Changed to this._plots()
 
     return { paid, expense: expenseValue, pending };
   });
@@ -87,7 +128,7 @@ export class DashboardComponent implements OnInit {
   }
 
   plotBreakdown = computed(() => {
-    let list = [...this.plots];
+    let list = [...this._plots()]; // Changed to this._plots()
     const queryStr = this.search().toLowerCase().trim();
     const activeF = this.activeFilters();
 
@@ -101,17 +142,14 @@ export class DashboardComponent implements OnInit {
     if (activeF.length > 0) {
       list = list.filter(p => {
         const totalPaidInMonth = this.scopedPayments().filter(pay => pay.plotNumber === p.plotNumber).reduce((sum, item) => sum + item.amount, 0);
-        const expected = this.colonyService.getExpectedRateForMonth(p, this.currentMonth);
-        const isFullyPaid = totalPaidInMonth >= expected;
-
         return activeF.every(filterName => {
           if (filterName === 'Completed') return p.status === 'Completed';
           if (filterName === 'Empty') return p.status === 'Empty';
           if (filterName === 'Underconstruction') return p.status === 'Underconstruction';
           if (filterName === 'Dues') return (p.outstandingDues || 0) > 0;
-          if (filterName === 'Pending') return !isFullyPaid;
-          if (filterName === 'Paid') return isFullyPaid;
-          if (filterName === 'Partial') return totalPaidInMonth > 0 && !isFullyPaid;
+          if (filterName === 'Pending') return (p.outstandingDues || 0) > 0;
+          if (filterName === 'Paid') return (p.outstandingDues || 0) === 0;
+          if (filterName === 'Partial') return totalPaidInMonth > 0 && (p.outstandingDues || 0) > 0;
           return true;
         });
       });
@@ -119,15 +157,14 @@ export class DashboardComponent implements OnInit {
 
     return list.map(p => {
       const totalPaidInMonth = this.scopedPayments().filter(pay => pay.plotNumber === p.plotNumber).reduce((sum, item) => sum + item.amount, 0);
-      const expected = this.colonyService.getExpectedRateForMonth(p, this.currentMonth);
 
       let currentMonthStatus = 'Pending';
-      if (totalPaidInMonth >= expected) currentMonthStatus = 'Fully Paid';
+      if ((p.outstandingDues || 0) === 0) currentMonthStatus = 'Fully Paid';
       else if (totalPaidInMonth > 0) currentMonthStatus = 'Partially Paid';
 
       return {
         plot: p,
-        accumulatedPending: p.outstandingDues || 0,
+        accumulatedPending: p.outstandingDues || 0, // Reads directly from Firestore tracking value
         currentMonthStatus
       };
     }).sort((a, b) => a.plot.plotNumber.localeCompare(b.plot.plotNumber, undefined, { numeric: true }));
@@ -136,15 +173,9 @@ export class DashboardComponent implements OnInit {
   tabularRegistryData = computed(() => {
     return this.plotBreakdown().map(item => {
       const p = item.plot;
-
-      // Filter out all payments matching this specific plot for the viewed month
       const plotPaymentsInMonth = this.scopedPayments().filter(pay => pay.plotNumber === p.plotNumber);
       const totalPaidInMonth = plotPaymentsInMonth.reduce((sum, pay) => sum + pay.amount, 0);
 
-      const expected = this.colonyService.getExpectedRateForMonth(p, this.currentMonth);
-      const currentDueAmount = Math.max(0, expected - totalPaidInMonth);
-
-      // NEW: Extract dates and payment methods into a readable summary string
       const paymentDetailsSummary = plotPaymentsInMonth.length > 0
         ? plotPaymentsInMonth.map(pay => `${pay.date} (${pay.method || 'N/A'})`).join(', ')
         : '—';
@@ -154,10 +185,10 @@ export class DashboardComponent implements OnInit {
         ownerName: p.ownerName,
         phone: p.phone || 'N/A',
         amountPaid: totalPaidInMonth,
-        amountDue: currentDueAmount,
+        amountDue: p.outstandingDues || 0,
         size: p.size || 0,
-        paymentDetails: paymentDetailsSummary, // 👈 Exposed to view template
-        status: totalPaidInMonth >= expected ? 'PAID' : totalPaidInMonth > 0 ? 'PARTIAL' : 'DUE'
+        paymentDetails: paymentDetailsSummary,
+        status: (p.outstandingDues || 0) === 0 ? 'PAID' : totalPaidInMonth > 0 ? 'PARTIAL' : 'DUE'
       };
     });
   });

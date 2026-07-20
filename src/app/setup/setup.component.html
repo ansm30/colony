@@ -73,6 +73,11 @@
         <input matInput type="number" [(ngModel)]="form.currentRate" />
       </mat-form-field>
 
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Opening Outstanding Dues Balance (₹)</mat-label>
+        <input matInput type="number" [(ngModel)]="form.outstandingDues" placeholder="0" />
+    </mat-form-field>
+
       <div style="display: flex; gap: 8px; margin-bottom: 8px;">
         <mat-form-field appearance="outline" style="flex: 1;">
           <mat-label>Classification</mat-label>
@@ -136,4 +141,32 @@
       }
     </mat-nav-list>
   </mat-card>
+
+  <!-- Place this at the absolute bottom of setup.component.html -->
+<mat-card style="padding: 16px; margin-top: 16px; border: 1px solid #fee2e2; background: #fffdfd;">
+  <h3 style="margin: 0 0 6px 0; font-weight: 500; font-size: 15px; color: #991b1b; display: flex; align-items: center; gap: 6px;">
+    🔒 Active Monthly Billing Locks
+  </h3>
+  <p style="font-size: 11px; color: #7f1d1d; opacity: 0.8; margin: 0 0 12px 0;">
+    The months listed below have already had dues processed. Click the delete button next to a month to unlock it and allow re-posting.
+  </p>
+
+  <mat-nav-list>
+
+    @for (month of generatedMonthsList(); track month) {
+      <mat-list-item style="height: auto; padding: 4px 0; border-bottom: 1px solid #fee2e2;">
+        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+          <span style="font-weight: 600; font-size: 14px; color: #475569;">📅 Cycle Period: {{ month }}</span>
+          <button mat-flat-button color="warn" style="height: 28px; font-size: 11px; line-height: 28px; padding: 0 10px;" (click)="removeBilledMonth(month)">
+            🗑️ Unlock
+          </button>
+        </div>
+      </mat-list-item>
+    } @empty {
+      <div style="text-align: center; color: #94a3b8; padding: 20px 0; font-size: 12px; font-style: italic;">
+        No active billing locks found. All operational cycles are open.
+      </div>
+    }
+  </mat-nav-list>
+</mat-card>
 </div>
