@@ -3,52 +3,47 @@
   <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #fafafa;">
     <p style="font-family: sans-serif; color: #666;">Loading Colony ERP...</p>
   </div>
-} @else {
+}
+<!-- 🌟 FIX: If user is NOT logged in OR route is /login, display the login component outlet -->
+@else if (!authService.currentUser() || router.url === '/login') {
+  <router-outlet></router-outlet>
+}
+<!-- 🌟 FIX: Only render Main Dashboard Shell if user IS authenticated -->
+@else {
+  <div class="app-view-wrapper" style="max-width: 480px; margin: 0 auto; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background-color: #f5f5f5; position: relative;">
 
-  <!-- Once initialized, evaluate if we show the login screen or the dashboard shell -->
-  @if (router.url === '/login') {
-    <router-outlet></router-outlet>
-  } @else {
-    <!-- Main Scrollable ERP Hub Shell -->
-    <div class="app-view-wrapper" style="max-width: 480px; margin: 0 auto; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background-color: #f5f5f5; position: relative;">
+    <mat-toolbar color="primary" style="flex-shrink: 0; display: flex; justify-content: space-between;">
+      <span>Colony ERP Hub</span>
+      <!-- Added logout trigger in toolbar -->
+      <button mat-button style="color: white;" (click)="logout()">Logout</button>
+    </mat-toolbar>
 
-      <mat-toolbar color="primary" style="flex-shrink: 0;">
-        <span>Colony ERP Hub</span>
-      </mat-toolbar>
+    <!-- Center container with touch scrolling built-in -->
+    <main class="content-body" style="flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 90px; -webkit-overflow-scrolling: touch;">
+      @if (activeTab() === 'dashboard') {
+        <app-dashboard [plots]="allPlots()"></app-dashboard>
+      }
+      @if (activeTab() === 'payment') {
+        <app-payments [plots]="allPlots()"></app-payments>
+      }
+      @if (activeTab() === 'setup') {
+        <app-setup [plots]="allPlots()"></app-setup>
+      }
+      @if (activeTab() === 'expense') {
+        <app-expenses></app-expenses>
+      }
+      @if (activeTab() === 'history') {
+        <app-activity-history></app-activity-history>
+      }
+    </main>
 
-      <!-- Center container with touch scrolling built-in for your data entries -->
-      <main class="content-body" style="flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 90px; -webkit-overflow-scrolling: touch;">
-        @if (activeTab() === 'dashboard') {
-          <app-dashboard [plots]="allPlots()"></app-dashboard>
-        }
-        @if (activeTab() === 'payment') {
-          <app-payments [plots]="allPlots()"></app-payments>
-        }
-
-        @if (activeTab() === 'setup') {
-          <app-setup [plots]="allPlots()"></app-setup>
-        }
-
-        @if (activeTab() === 'expense') {
-          <app-expenses></app-expenses>
-        }
-
-        @if (activeTab() === 'history') {
-          <app-activity-history></app-activity-history>
-        }
-        <!-- Rest of your application tabs -->
-      </main>
-
-      <!-- Pinned navigation bar -->
-      <nav style="position: absolute; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 8px 0; border-top: 1px solid #e0e0e0; z-index: 999;">
-        <button mat-button (click)="activeTab.set('dashboard')" [color]="activeTab() === 'dashboard' ? 'primary' : ''">📊 Dash</button>
-        <button mat-button (click)="activeTab.set('payment')" [color]="activeTab() === 'payment' ? 'primary' : ''">💸 Pay</button>
-        <button mat-button (click)="activeTab.set('expense')" [color]="activeTab() === 'expense' ? 'primary' : ''">💰 Exp</button>
-        <button mat-button (click)="activeTab.set('setup')" [color]="activeTab() === 'setup' ? 'primary' : ''">⚙️ Setup</button>
-        <button mat-button (click)="activeTab.set('history')" [color]="activeTab() === 'history' ? 'primary' : ''">📜 Hist</button>
-      </nav>
-    </div>
-
-    <div style="display: none;"><router-outlet></router-outlet></div>
-  }
+    <!-- Pinned navigation bar -->
+    <nav style="position: absolute; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 8px 0; border-top: 1px solid #e0e0e0; z-index: 999;">
+      <button mat-button (click)="activeTab.set('dashboard')" [color]="activeTab() === 'dashboard' ? 'primary' : ''">📊 Dash</button>
+      <button mat-button (click)="activeTab.set('payment')" [color]="activeTab() === 'payment' ? 'primary' : ''">💸 Pay</button>
+      <button mat-button (click)="activeTab.set('expense')" [color]="activeTab() === 'expense' ? 'primary' : ''">💰 Exp</button>
+      <button mat-button (click)="activeTab.set('setup')" [color]="activeTab() === 'setup' ? 'primary' : ''">⚙️ Setup</button>
+      <button mat-button (click)="activeTab.set('history')" [color]="activeTab() === 'history' ? 'primary' : ''">📜 Hist</button>
+    </nav>
+  </div>
 }

@@ -23,16 +23,23 @@ import { ActivityHistoryComponent } from './activity-history/activity-history.co
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
+
 export class AppComponent implements OnInit {
   private colonyService = inject(ColonyService);
   public notificationService = inject(NotificationService);
   public authService = inject(AuthService);
-  public router = inject(Router); // <-- Inject Router here to track current URLs
+  public router = inject(Router);
 
-  activeTab = signal<'dashboard' | 'payment' | 'expense' | 'setup' | 'history'  >('dashboard');
+  activeTab = signal<'dashboard' | 'payment' | 'expense' | 'setup' | 'history'>('dashboard');
   allPlots = signal<any[]>([]);
 
   ngOnInit() {
     this.colonyService.getPlots().subscribe(data => this.allPlots.set(data));
+  }
+
+  logout() {
+    this.authService.logout().then(() => {
+      this.router.navigate(['/login']);
+    });
   }
 }

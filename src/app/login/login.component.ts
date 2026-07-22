@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router'; // 1. Add Router import
 import { AuthService } from '../services/auth.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -15,47 +16,24 @@ import { MatButtonModule } from '@angular/material/button';
       <mat-card>
         <h2 style="margin: 0; text-align: center; color: #3f51b5;">Colony Management ERP</h2>
 
-        <!-- Added form tag to handle enter-key submissions natively -->
         <form (ngSubmit)="handleLogin()">
-
-          <!-- Email Input Field -->
           <mat-form-field appearance="outline">
             <mat-label>Admin Email</mat-label>
-            <input
-              matInput
-              type="email"
-              name="email"
-              [(ngModel)]="email"
-              required
-              placeholder="admin&#64;example.com">
+            <input matInput type="email" name="email" [(ngModel)]="email" required placeholder="admin@example.com">
           </mat-form-field>
 
-          <!-- Password Input Field -->
           <mat-form-field appearance="outline">
             <mat-label>Password</mat-label>
-            <input
-              matInput
-              type="password"
-              name="password"
-              [(ngModel)]="password"
-              required
-              placeholder="Enter your password">
+            <input matInput type="password" name="password" [(ngModel)]="password" required placeholder="Enter your password">
           </mat-form-field>
 
-          <!-- Error Message Display -->
           @if (errorMsg()) {
             <p class="error-banner">{{ errorMsg() }}</p>
           }
 
-          <!-- Submit Button -->
-          <button
-            mat-raised-button
-            color="primary"
-            type="submit"
-            [disabled]="loading() || !email || !password">
+          <button mat-raised-button color="primary" type="submit" [disabled]="loading() || !email || !password">
             {{ loading() ? 'Verifying...' : 'Sign In' }}
           </button>
-
         </form>
       </mat-card>
     </div>
@@ -70,6 +48,7 @@ import { MatButtonModule } from '@angular/material/button';
 })
 export class LoginComponent {
   private authService = inject(AuthService);
+  private router = inject(Router); // 2. Inject Router
 
   email = '';
   password = '';
@@ -83,6 +62,8 @@ export class LoginComponent {
 
     try {
       await this.authService.login(this.email, this.password);
+      // 3. Navigate to dashboard shell on success!
+      this.router.navigate(['/dashboard']);
     } catch (err: any) {
       this.errorMsg.set('Invalid credentials. Please try again.');
     } finally {

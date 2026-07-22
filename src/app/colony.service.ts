@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Firestore, collection, onSnapshot, doc, updateDoc, query, where, writeBatch } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
-
 export interface PlotMonthConfig {
   status: 'Completed' | 'Empty' | 'Underconstruction';
   rate: number;
@@ -46,6 +45,43 @@ export interface BillingMetadata { generatedMonths: string[]; }
 @Injectable({ providedIn: 'root' })
 export class ColonyService {
   private firestore = inject(Firestore);
+
+async importWorkbookData(plotsList: any[], paymentsList: any[]): Promise<void> {
+  const batch = writeBatch(this.firestore);
+
+  // 1. Sync or Create Plot Master Profiles
+  const plotDocMap = new Map<string, string>(); // Maps "EWS 02" -> Firestore Doc ID
+
+  for (const plot of plotsList) {
+    const plotRef = doc(collection(this.firestore, 'plots'));
+    batch.set(plotRef, {
+      plotNumber: plot.plotNumber,
+      ownerName: plot.ownerName || '',
+      phone: plot.phone || '',
+      type: plot.type || 'Others',
+      status: plot.status || 'Empty',
+      outstandingDues: Number(plot.outstandingDues) || 0,
+      currentRate: plot.type === 'EWS' || plot.type === 'LIG' ? 600 : 800
+    });
+    plotDocMap.set(plot.plotNumber, plotRef.id);
+  }
+
+  // 2. Write Historical Monthly Payment Entries
+  for (const pay of paymentsList) {
+    const payRef = doc(collection(this.firestore, 'payments'));
+    batch.set(payRef, {
+      plotNumber: pay.plotNumber,
+      amount: Number(pay.amount),
+      month: pay.month,
+      date: pay.date,
+      method: 'Cash/UPI',
+      remark: pay.remark
+    });
+  }
+
+  // Commit all writes atomically in a single network request
+  await batch.commit();
+}
 
   getCurrentMonth(): string {
     const now = new Date();
