@@ -49,32 +49,32 @@ export class ColonyService {
   private firestore = inject(Firestore);
   private activityLog = inject(ActivityLogService);
 
-async importWorkbookData(plots: Plot[], payments: Payment[], expenses: Expense[] = []) {
-  const batch = writeBatch(this.firestore);
+  async importWorkbookData(plots: Plot[], payments: Payment[], expenses: Expense[] = []) {
+    const batch = writeBatch(this.firestore);
 
-  // 1. Batch insert/update plots
-  const plotsRef = collection(this.firestore, 'plots');
-  for (const p of plots) {
-    const docRef = doc(plotsRef, p.plotNumber);
-    batch.set(docRef, p, { merge: true });
+    // 1. Batch insert/update plots
+    const plotsRef = collection(this.firestore, 'plots');
+    for (const p of plots) {
+      const docRef = doc(plotsRef, p.plotNumber);
+      batch.set(docRef, p, { merge: true });
+    }
+
+    // 2. Batch insert payments
+    const paymentsRef = collection(this.firestore, 'payments');
+    for (const pay of payments) {
+      const docRef = doc(paymentsRef);
+      batch.set(docRef, pay);
+    }
+
+    // 3. Batch insert expenses
+    const expensesRef = collection(this.firestore, 'expenses');
+    for (const exp of expenses) {
+      const docRef = doc(expensesRef);
+      batch.set(docRef, exp);
+    }
+
+    await batch.commit();
   }
-
-  // 2. Batch insert payments
-  const paymentsRef = collection(this.firestore, 'payments');
-  for (const pay of payments) {
-    const docRef = doc(paymentsRef);
-    batch.set(docRef, pay);
-  }
-
-  // 3. Batch insert expenses
-  const expensesRef = collection(this.firestore, 'expenses');
-  for (const exp of expenses) {
-    const docRef = doc(expensesRef);
-    batch.set(docRef, exp);
-  }
-
-  await batch.commit();
-}
 
   getCurrentMonth(): string {
     const now = new Date();
@@ -241,8 +241,13 @@ async importWorkbookData(plots: Plot[], payments: Payment[], expenses: Expense[]
   }
 
   // Add this inside ColonyService if it's missing:
-getAllExpenses(): Observable<Expense[]> {
-  const expensesRef = collection(this.firestore, 'expenses');
-  return collectionData(expensesRef, { idField: 'id' }) as Observable<Expense[]>;
-}
+  // Update this method inside colony.service.ts
+  getAllExpenses(): Observable<Expense[]> {
+    return new Observable<Expense[]>(subscriber => {
+      const unsubscribe = onSnapshot(collection(this.firestore, 'expenses'), (snap) => {
+        subscriber.next(snap.docs.map(d => ({ id: d.id, ...d.data() })) as Expense[]);
+      }, (err) => subscriber.error(err));
+      return () => unsubscribe();
+    });
+  }
 }

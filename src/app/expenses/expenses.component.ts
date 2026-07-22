@@ -33,6 +33,10 @@ export class ExpensesComponent {
   scopedExpenses = signal<Expense[]>([]);
   showSuccess = signal(false);
 
+  // Toggles
+  isCompactView = signal<boolean>(false);
+  isTableView = signal<boolean>(false);
+
   constructor() {
     effect(() => {
       this.colonyService.getExpensesByMonth(this.filterMonth()).subscribe(data => {
@@ -45,6 +49,18 @@ export class ExpensesComponent {
     this.filterMonth.set(event.target.value);
   }
 
+  toggleCompactView() {
+    this.isCompactView.update(v => !v);
+  }
+
+  toggleTableView() {
+    this.isTableView.update(v => !v);
+  }
+
+  closeOverlay() {
+    this.showSuccess.set(false);
+  }
+
   save() {
     if (!this.form.title || !this.form.amount) return;
 
@@ -53,7 +69,7 @@ export class ExpensesComponent {
       amount: this.form.amount,
       month: this.form.month,
       date: this.form.date,
-      remark: this.form.remark ? this.form.remark.trim() : '' // 👈 Changed from 'undefined' to ''
+      remark: this.form.remark ? this.form.remark.trim() : ''
     };
 
     this.colonyService.addExpense(expensePayload).then(async () => {
@@ -64,14 +80,12 @@ export class ExpensesComponent {
       );
       this.notify.showSuccess('Expense voucher saved successfully.');
       this.form = { title: '', amount: 0, month: this.colonyService.getCurrentMonth(), date: this.colonyService.getCurrentDate(), remark: '' };
-      setTimeout(() => this.showSuccess.set(false), 2000);
     }).catch(err => {
       console.error(err);
       this.notify.showError('Failed to record expense.');
     });
   }
 
-  // Live computed total of all expenses for the selected month
   totalMonthExpense = computed(() => {
     return this.scopedExpenses().reduce((sum, e) => sum + (e.amount || 0), 0);
   });

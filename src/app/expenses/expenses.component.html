@@ -1,50 +1,66 @@
 <div style="padding: 16px; display: flex; flex-direction: column; gap: 16px; position: relative;">
 
-  <!-- ACTION OVERLAY ALERT -->
-  @if (showSuccess()) {
-    <div style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(239, 68, 68, 0.93); backdrop-filter: blur(6px); z-index: 9999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; text-align:center; border-radius: 8px;">
-      <span style="font-size: 56px; margin-bottom: 12px;">📉</span>
-      <h2 style="font-size: 22px; margin: 0; font-weight: 500;">Expense Voucher Logged</h2>
-      <p style="font-size: 12px; opacity: 0.8; margin-top: 4px;">Balancing matrix calculation synchronized.</p>
-    </div>
-  }
+  <!-- TOP VIEW CONTROL BUTTONS -->
+  <div style="display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+    <button mat-stroked-button color="warn" (click)="toggleTableView()" style="font-size: 12px;">
+      {{ isTableView() ? '📱 Switch to Tile View' : '📊 Switch to Table View' }}
+    </button>
+    <button mat-stroked-button color="warn" (click)="toggleCompactView()" style="font-size: 12px;">
+      {{ isCompactView() ? '📂 Expand Expense Entry Form' : '⚡ Switch to Compact View' }}
+    </button>
+  </div>
 
   <!-- RE-ORGANIZED ACTION FORM PANEL -->
-  <mat-card style="padding: 16px;">
-    <h3 style="margin: 0 0 16px 0; color: #ef4444; font-weight: 500;">Log Maintenance Expense</h3>
-    <div style="display: flex; flex-direction: column; gap: 4px;">
+  @if (!isCompactView()) {
+    <mat-card style="padding: 16px;">
+      <h3 style="margin: 0 0 16px 0; color: #ef4444; font-weight: 500;">Log Maintenance Expense</h3>
 
-      <mat-form-field appearance="outline" style="width: 100%;">
-        <mat-label>Voucher Description Title</mat-label>
-        <input matInput [(ngModel)]="form.title" placeholder="e.g. Pump Repair" />
-      </mat-form-field>
-
-      <mat-form-field appearance="outline" style="width: 100%;">
-        <mat-label>Debit Amount Incurred (₹)</mat-label>
-        <input matInput type="number" [(ngModel)]="form.amount" />
-      </mat-form-field>
-
-      <div style="display: flex; gap: 12px; width: 100%; margin-bottom: 8px; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 140px;">
-          <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Expense Cycle Month</label>
-          <input type="month" [(ngModel)]="form.month" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; height: 50px;" />
+      <!-- INLINE SUCCESS NOTIFICATION CARD (INSTEAD OF FULLPAGE OVERLAY) -->
+      @if (showSuccess()) {
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 16px; text-align: center; color: #991b1b; margin-bottom: 8px;">
+          <span style="font-size: 36px; display: block; margin-bottom: 6px;">📉</span>
+          <h4 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Expense Voucher Logged</h4>
+          <p style="font-size: 12px; opacity: 0.8; margin: 0 0 12px 0;">Balancing matrix calculation synchronized.</p>
+          <button mat-stroked-button color="warn" (click)="closeOverlay()" style="font-size: 12px;">
+            Log Another Expense
+          </button>
         </div>
-        <div style="flex: 1; min-width: 140px;">
-          <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Voucher Log Date</label>
-          <input type="date" [(ngModel)]="form.date" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; height: 50px;" />
+      } @else {
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+
+          <mat-form-field appearance="outline" style="width: 100%;">
+            <mat-label>Voucher Description Title</mat-label>
+            <input matInput [(ngModel)]="form.title" placeholder="e.g. Pump Repair" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" style="width: 100%;">
+            <mat-label>Debit Amount Incurred (₹)</mat-label>
+            <input matInput type="number" [(ngModel)]="form.amount" />
+          </mat-form-field>
+
+          <div style="display: flex; gap: 12px; width: 100%; margin-bottom: 8px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 140px;">
+              <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Expense Cycle Month</label>
+              <input type="month" [(ngModel)]="form.month" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; height: 50px;" />
+            </div>
+            <div style="flex: 1; min-width: 140px;">
+              <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Voucher Log Date</label>
+              <input type="date" [(ngModel)]="form.date" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; height: 50px;" />
+            </div>
+          </div>
+
+          <mat-form-field appearance="outline" style="width: 100%;">
+            <mat-label>Expense Remark / Voucher Details</mat-label>
+            <textarea matInput [(ngModel)]="form.remark" name="remark" placeholder="e.g. Purchased 4 bags of premium cement, invoice attached" rows="2"></textarea>
+          </mat-form-field>
+
+          <button mat-raised-button color="warn" style="width: 100%; padding: 12px 0;" (click)="save()">
+            Log Expense Voucher
+          </button>
         </div>
-      </div>
-
-      <mat-form-field appearance="outline" style="width: 100%;">
-        <mat-label>Expense Remark / Voucher Details</mat-label>
-        <textarea matInput [(ngModel)]="form.remark" name="remark" placeholder="e.g. Purchased 4 bags of premium cement, invoice attached" rows="2"></textarea>
-      </mat-form-field>
-
-      <button mat-raised-button color="warn" style="width: 100%; padding: 12px 0;" (click)="save()">
-        Log Expense Voucher
-      </button>
-    </div>
-  </mat-card>
+      }
+    </mat-card>
+  }
 
   <!-- COMPREHENSIVE DEBIT REGISTRY LOG DISPLAY CARD -->
   <mat-card style="padding: 16px;">
@@ -64,44 +80,87 @@
       <b style="font-size: 18px; color: #dc2626;">₹{{ totalMonthExpense() }}</b>
     </div>
 
-    <mat-nav-list style="padding: 0; display: flex; flex-direction: column; gap: 10px;">
-      @for (exp of scopedExpenses(); track exp.id) {
-        <mat-list-item style="height: auto; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #ffffff;">
-          <div style="display: flex; justify-content: space-between; width: 100%; align-items: flex-start;">
+    <!-- VIEW SWITCHER: TABLE VIEW vs TILE VIEW -->
+    @if (isTableView()) {
+      <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+          <thead>
+            <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569;">
+              <th style="padding: 10px;">Title / Ref</th>
+              <th style="padding: 10px;">Date / Month</th>
+              <th style="padding: 10px;">Remark</th>
+              <th style="padding: 10px; text-align: right;">Amount</th>
+              <th style="padding: 10px; text-align: center;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (exp of scopedExpenses(); track exp.id) {
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 10px;">
+                  <div style="font-weight: 700; color: #1e293b; overflow-wrap: anywhere;">{{exp.title}}</div>
+                  @if (exp.id) {
+                    <div style="font-family: monospace; color: #94a3b8; font-size: 10px;">Ref: {{exp.id}}</div>
+                  }
+                </td>
+                <td style="padding: 10px; color: #64748b;">
+                  <div>Debit: {{exp.date}}</div>
+                  <div style="font-size: 10px;">Month: {{exp.month}}</div>
+                </td>
+                <td style="padding: 10px; color: #334155; max-width: 160px; word-break: break-all;">{{exp.remark || '—'}}</td>
+                <td style="padding: 10px; text-align: right; color: #ef4444; font-weight: 600;">- ₹{{exp.amount}}</td>
+                <td style="padding: 10px; text-align: center;">
+                  <button mat-icon-button color="warn" (click)="onDeleteExpense(exp)" style="width: 28px; height: 28px; line-height: 28px;">
+                    🗑️
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" style="text-align: center; color: #94a3b8; font-size: 12px; padding: 16px;">No outlays recorded for this month.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <mat-nav-list style="padding: 0; display: flex; flex-direction: column; gap: 10px;">
+        @for (exp of scopedExpenses(); track exp.id) {
+          <mat-list-item style="height: auto; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #ffffff;">
+            <div style="display: flex; justify-content: space-between; width: 100%; align-items: flex-start;">
 
-            <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; overflow: hidden; padding-right: 12px;">
-              <span style="font-weight: 700; font-size: 14px; color: #1e293b; overflow-wrap: anywhere;">{{exp.title}}</span>
+              <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; overflow: hidden; padding-right: 12px;">
+                <span style="font-weight: 700; font-size: 14px; color: #1e293b; overflow-wrap: anywhere;">{{exp.title}}</span>
 
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 2px 8px; font-size: 11px; color: #64748b;">
-                <div><strong>Debit Date:</strong> {{exp.date}}</div>
-                <div><strong>Exp Month:</strong> {{exp.month}}</div>
-                @if (exp.id) {
-                  <div style="grid-column: 1 / -1; font-family: monospace; color: #94a3b8; font-size: 10px; margin-top: 2px;">
-                    <strong>Voucher Reference:</strong> {{exp.id}}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 2px 8px; font-size: 11px; color: #64748b;">
+                  <div><strong>Debit Date:</strong> {{exp.date}}</div>
+                  <div><strong>Exp Month:</strong> {{exp.month}}</div>
+                  @if (exp.id) {
+                    <div style="grid-column: 1 / -1; font-family: monospace; color: #94a3b8; font-size: 10px; margin-top: 2px;">
+                      <strong>Voucher Reference:</strong> {{exp.id}}
+                    </div>
+                  }
+                </div>
+
+                @if (exp.remark) {
+                  <div style="font-size: 11px; color: #334155; background: #fff5f5; border-left: 3px solid #ef4444; padding: 4px 8px; border-radius: 0 4px 4px 0; margin-top: 4px; word-break: break-word; overflow-wrap: anywhere; max-width: 100%;">
+                    <strong>Voucher Breakdowns:</strong> {{exp.remark}}
                   </div>
                 }
               </div>
 
-              @if (exp.remark) {
-                <div style="font-size: 11px; color: #334155; background: #fff5f5; border-left: 3px solid #ef4444; padding: 4px 8px; border-radius: 0 4px 4px 0; margin-top: 4px; word-break: break-word; overflow-wrap: anywhere; max-width: 100%;">
-                  <strong>Voucher Breakdowns:</strong> {{exp.remark}}
-                </div>
-              }
-            </div>
+              <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; min-width: max-content;">
+                <b style="color: #ef4444; font-size: 15px;">- ₹{{exp.amount}}</b>
+                <button mat-icon-button color="warn" (click)="onDeleteExpense(exp)" style="width: 32px; height: 32px; line-height: 32px;">
+                  🗑️
+                </button>
+              </div>
 
-            <!-- INLINE AMOUNT AND DELETE BUTTON TOGETHER -->
-            <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; min-width: max-content;">
-              <b style="color: #ef4444; font-size: 15px;">- ₹{{exp.amount}}</b>
-              <button mat-icon-button color="warn" (click)="onDeleteExpense(exp)" style="width: 32px; height: 32px; line-height: 32px;">
-                🗑️
-              </button>
             </div>
-
-          </div>
-        </mat-list-item>
-      } @empty {
-        <div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 16px 0;">No outlays recorded for this month.</div>
-      }
-    </mat-nav-list>
+          </mat-list-item>
+        } @empty {
+          <div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 16px 0;">No outlays recorded for this month.</div>
+        }
+      </mat-nav-list>
+    }
   </mat-card>
 </div>

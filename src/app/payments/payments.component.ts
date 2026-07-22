@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, inject, signal, effect } from '@angular/core';
+import { Component, Input, OnInit, inject, signal, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ColonyService, Plot, Payment } from '../colony.service';
@@ -44,11 +44,15 @@ export class PaymentsComponent implements OnInit {
   };
 
   filterPlot = '';
-  filterMonth = signal<string>('2026-07');
+  filterMonth = signal<string>(this.colonyService.getCurrentMonth());
   scopedPayments = signal<Payment[]>([]);
 
   showSuccess = signal(false);
   lastSavedPayment = signal<Payment | null>(null);
+
+  // Toggles
+  isCompactView = signal<boolean>(false);
+  isTableView = signal<boolean>(false);
 
   constructor() {
     effect(() => {
@@ -60,7 +64,6 @@ export class PaymentsComponent implements OnInit {
 
   ngOnInit() { }
 
-  // Searchable filter logic for the plot selection autocomplete
   getFilteredPlotsForInput(): Plot[] {
     const query = this.form.plotNumber ? this.form.plotNumber.toLowerCase().trim() : '';
     return (this.plots || [])
@@ -88,6 +91,18 @@ export class PaymentsComponent implements OnInit {
     }
   }
 
+  totalMonthCollection = computed(() => {
+    return this.getFilteredPayments().reduce((sum, p) => sum + (p.amount || 0), 0);
+  });
+
+  toggleCompactView() {
+    this.isCompactView.update(v => !v);
+  }
+
+  toggleTableView() {
+    this.isTableView.update(v => !v);
+  }
+
   save() {
     if (!this.form.plotNumber || !this.form.amount) return;
 
@@ -103,7 +118,7 @@ export class PaymentsComponent implements OnInit {
       month: this.form.month,
       date: this.form.date,
       method: this.form.method,
-      remark: this.form.remark ? this.form.remark.trim() : '' // 👈 Changed from 'undefined' to ''
+      remark: this.form.remark ? this.form.remark.trim() : ''
     };
 
     this.colonyService.addPaymentTransaction(
