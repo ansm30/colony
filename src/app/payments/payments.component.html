@@ -5,7 +5,7 @@
     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 58, 138, 0.93); backdrop-filter: blur(6px); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; padding: 24px; box-sizing: border-box; border-radius: 8px;">
       <span style="font-size: 56px; margin-bottom: 12px;">✅</span>
       <h2 style="font-size: 22px; margin: 0 0 8px 0;">Transaction Confirmed</h2>
-      <p style="font-size: 13px; opacity: 0.8; margin-bottom: 24px; padding: 0 20px;">Receipt has been parsed successfully into secure cloud state storage data tracks.</p>
+      <p style="font-size: 13px; opacity: 0.8; margin-bottom: 24px; padding: 0 20px;">Receipt saved successfully.</p>
 
       <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 280px;">
         <button mat-flat-button color="accent" (click)="whatsappMeReceipt()">
@@ -23,13 +23,22 @@
     <h3 style="margin: 0 0 16px 0; color: #1e3a8a; font-weight: 500;">Log Collection Receipt</h3>
     <div style="display: flex; flex-direction: column; gap: 4px;">
 
+      <!-- AUTOCOMPLETE SEARCHABLE PLOT SELECTOR -->
       <mat-form-field appearance="outline" style="width: 100%;">
-        <mat-label>Select Target Plot</mat-label>
-        <mat-select [(ngModel)]="form.plotNumber" (selectionChange)="autoFillRate()">
-          @for (p of getSortedPlotsInput(); track p.plotNumber) {
-            <mat-option [value]="p.plotNumber">Plot #{{p.plotNumber}} ({{p.status}})</mat-option>
+        <mat-label>🔍 Search & Select Plot # or Owner Name</mat-label>
+        <input matInput
+               type="text"
+               [(ngModel)]="form.plotNumber"
+               [matAutocomplete]="autoPlot"
+               (input)="autoFillRate()"
+               placeholder="Type plot no or owner name..." />
+        <mat-autocomplete #autoPlot="matAutocomplete" (optionSelected)="autoFillRate()">
+          @for (p of getFilteredPlotsForInput(); track p.plotNumber) {
+            <mat-option [value]="p.plotNumber">
+              Plot #{{p.plotNumber}} — {{p.ownerName || 'Unassigned'}} ({{p.status}})
+            </mat-option>
           }
-        </mat-select>
+        </mat-autocomplete>
       </mat-form-field>
 
       <mat-form-field appearance="outline" style="width: 100%;">
@@ -39,7 +48,8 @@
 
       <div style="margin-bottom: 16px;">
         <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Statement Month</label>
-        <input type="month" [(ngModel)]="form.month" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit;" />
+        <input type="month" [(ngModel)]="form.month"
+          style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit;" />
       </div>
 
       <mat-form-field appearance="outline" style="width: 100%;">
@@ -72,7 +82,8 @@
         <input matInput [(ngModel)]="filterPlot" placeholder="e.g. 104" />
       </mat-form-field>
       <div style="flex: 1.5;">
-        <input type="month" [value]="filterMonth()" (change)="changeMonthFilter($event)" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; height: 50px; box-sizing: border-box; font-family: inherit;" />
+        <input type="month" [value]="filterMonth()" (change)="changeMonthFilter($event)"
+          style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; height: 50px; box-sizing: border-box; font-family: inherit;" />
       </div>
     </div>
 
@@ -80,8 +91,8 @@
       @for (pay of getFilteredPayments(); track pay.id) {
         <mat-list-item style="height: auto; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: #ffffff;">
           <div style="display: flex; justify-content: space-between; width: 100%; align-items: flex-start;">
-            <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
 
+            <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <span style="font-weight: 700; font-size: 14px; color: #1e3a8a;">Plot #{{pay.plotNumber}}</span>
                 <span style="font-size: 10px; font-weight: 700; padding: 2px 6px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 4px; text-transform: uppercase;">
@@ -104,9 +115,16 @@
                   <strong>Note:</strong> {{pay.remark}}
                 </div>
               }
-
             </div>
-            <b style="color: #10b981; font-size: 15px; white-space: nowrap; padding-left: 8px;">+ ₹{{pay.amount}}</b>
+
+            <!-- INLINE AMOUNT AND DELETE BUTTON TOGETHER -->
+            <div style="display: flex; align-items: center; gap: 4px; white-space: nowrap; padding-left: 8px;">
+              <b style="color: #10b981; font-size: 15px;">+ ₹{{pay.amount}}</b>
+              <button mat-icon-button color="warn" (click)="onDeletePayment(pay)" style="width: 32px; height: 32px; line-height: 32px;">
+                🗑️
+              </button>
+            </div>
+
           </div>
         </mat-list-item>
       } @empty {

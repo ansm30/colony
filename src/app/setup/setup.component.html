@@ -37,6 +37,7 @@
     </div>
   }
 
+  <!-- PROFILE REGISTER / EDIT FORM CARD -->
   <mat-card style="padding: 16px;">
     <h3 style="margin: 0 0 16px 0; color: #475569; font-weight: 500;">
       {{ isEditing() ? 'Modify Profile: Plot #' + form.plotNumber : 'Register Plot Profile' }}
@@ -65,7 +66,7 @@
 
       <mat-form-field appearance="outline" style="width: 100%;">
         <mat-label>Plot Size</mat-label>
-        <input matInput type="nuumber" [(ngModel)]="form.size" />
+        <input matInput type="number" [(ngModel)]="form.size" />
       </mat-form-field>
 
       <mat-form-field appearance="outline" style="width: 100%;">
@@ -76,7 +77,7 @@
       <mat-form-field appearance="outline" style="width: 100%;">
         <mat-label>Opening Outstanding Dues Balance (₹)</mat-label>
         <input matInput type="number" [(ngModel)]="form.outstandingDues" placeholder="0" />
-    </mat-form-field>
+      </mat-form-field>
 
       <div style="display: flex; gap: 8px; margin-bottom: 8px;">
         <mat-form-field appearance="outline" style="flex: 1;">
@@ -120,10 +121,45 @@
     </div>
   </mat-card>
 
+  <!-- CONFIGURED PLOTS INVENTORY CARD WITH SEARCH & FILTERS -->
   <mat-card style="padding: 16px;">
-    <h3 style="margin: 0 0 12px 0; font-weight: 500; font-size: 15px;">Configured Plots Inventory ({{plots.length}})</h3>
+    <h3 style="margin: 0 0 12px 0; font-weight: 500; font-size: 15px;">
+      Configured Plots Inventory ({{ getFilteredPlots().length }} / {{ plots.length }})
+    </h3>
+
+    <!-- SEARCH & FILTER BAR -->
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>🔍 Search Plot # or Owner Name</mat-label>
+        <input matInput [(ngModel)]="searchQuery" placeholder="e.g. EWS 02 or Saifuddin" />
+      </mat-form-field>
+
+      <div style="display: flex; gap: 8px;">
+        <mat-form-field appearance="outline" style="flex: 1;">
+          <mat-label>Status Filter</mat-label>
+          <mat-select [(ngModel)]="filterStatus">
+            <mat-option value="ALL">All Statuses</mat-option>
+            <mat-option value="Completed">Completed</mat-option>
+            <mat-option value="Underconstruction">Underconstruction</mat-option>
+            <mat-option value="Empty">Empty Land</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" style="flex: 1;">
+          <mat-label>Type Filter</mat-label>
+          <mat-select [(ngModel)]="filterType">
+            <mat-option value="ALL">All Types</mat-option>
+            <mat-option value="EWS">EWS</mat-option>
+            <mat-option value="LIG">LIG</mat-option>
+            <mat-option value="Others">Others</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- PLOTS LIST -->
     <mat-nav-list>
-      @for (p of getSortedPlots(); track p.id) {
+      @for (p of getFilteredPlots(); track p.id || p.plotNumber) {
         <mat-list-item style="height: auto; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
           <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
             <div>
@@ -131,46 +167,50 @@
                 Plot #{{p.plotNumber}}
               </span>
               <span style="font-size: 10px; background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">{{p.status}}</span>
-              <div style="font-size: 12px; color: #475569; margin-top: 2px;">Owner: {{p.ownerName}}</div>
+              <span style="font-size: 10px; background: #f1f5f9; color: #334155; padding: 2px 6px; border-radius: 4px; margin-left: 4px; border: 1px solid #cbd5e1;">{{p.type}}</span>
+              <div style="font-size: 12px; color: #475569; margin-top: 2px;">Owner: {{p.ownerName || 'Unassigned'}}</div>
             </div>
             <button mat-stroked-button color="primary" style="height: 32px; font-size: 12px; padding: 0 12px;" (click)="startEdit(p)">
               Edit
             </button>
           </div>
         </mat-list-item>
+      } @empty {
+        <div style="text-align: center; color: #94a3b8; padding: 24px 0; font-size: 13px;">
+          No matching plots found for the selected search/filter options.
+        </div>
       }
     </mat-nav-list>
   </mat-card>
 
-  <!-- Place this at the absolute bottom of setup.component.html -->
-<mat-card style="padding: 16px; margin-top: 16px; border: 1px solid #fee2e2; background: #fffdfd;">
-  <h3 style="margin: 0 0 6px 0; font-weight: 500; font-size: 15px; color: #991b1b; display: flex; align-items: center; gap: 6px;">
-    🔒 Active Monthly Billing Locks
-  </h3>
-  <p style="font-size: 11px; color: #7f1d1d; opacity: 0.8; margin: 0 0 12px 0;">
-    The months listed below have already had dues processed. Click the delete button next to a month to unlock it and allow re-posting.
-  </p>
+  <!-- BILLING LOCKS PANEL -->
+  <mat-card style="padding: 16px; margin-top: 16px; border: 1px solid #fee2e2; background: #fffdfd;">
+    <h3 style="margin: 0 0 6px 0; font-weight: 500; font-size: 15px; color: #991b1b; display: flex; align-items: center; gap: 6px;">
+      🔒 Active Monthly Billing Locks
+    </h3>
+    <p style="font-size: 11px; color: #7f1d1d; opacity: 0.8; margin: 0 0 12px 0;">
+      The months listed below have already had dues processed. Click the delete button next to a month to unlock it and allow re-posting.
+    </p>
 
-  <mat-nav-list>
-
-    @for (month of generatedMonthsList(); track month) {
-      <mat-list-item style="height: auto; padding: 4px 0; border-bottom: 1px solid #fee2e2;">
-        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-          <span style="font-weight: 600; font-size: 14px; color: #475569;">📅 Cycle Period: {{ month }}</span>
-          <button mat-flat-button color="warn" style="height: 28px; font-size: 11px; line-height: 28px; padding: 0 10px;" (click)="removeBilledMonth(month)">
-            🗑️ Unlock
-          </button>
+    <mat-nav-list>
+      @for (month of generatedMonthsList(); track month) {
+        <mat-list-item style="height: auto; padding: 4px 0; border-bottom: 1px solid #fee2e2;">
+          <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+            <span style="font-weight: 600; font-size: 14px; color: #475569;">📅 Cycle Period: {{ month }}</span>
+            <button mat-flat-button color="warn" style="height: 28px; font-size: 11px; line-height: 28px; padding: 0 10px;" (click)="removeBilledMonth(month)">
+              🗑️ Unlock
+            </button>
+          </div>
+        </mat-list-item>
+      } @empty {
+        <div style="text-align: center; color: #94a3b8; padding: 20px 0; font-size: 12px; font-style: italic;">
+          No active billing locks found. All operational cycles are open.
         </div>
-      </mat-list-item>
-    } @empty {
-      <div style="text-align: center; color: #94a3b8; padding: 20px 0; font-size: 12px; font-style: italic;">
-        No active billing locks found. All operational cycles are open.
-      </div>
-    }
-  </mat-nav-list>
-</mat-card>
+      }
+    </mat-nav-list>
+  </mat-card>
 
-<mat-card style="padding: 16px; margin-top: 16px; border: 1px dashed #2563eb; background: #eff6ff;">
+  <mat-card style="padding: 16px; margin-top: 16px; border: 1px dashed #2563eb; background: #eff6ff;">
   <h3 style="margin: 0 0 6px 0; color: #1e3a8a; font-size: 15px; display: flex; align-items: center; gap: 8px;">
     📁 Import Coral Life Excel Workbook
   </h3>
@@ -180,4 +220,5 @@
 
   <input type="file" (change)="handleExcelWorkbookUpload($event)" accept=".xlsx, .xls" style="font-size: 12px;" />
 </mat-card>
+
 </div>

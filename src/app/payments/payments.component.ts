@@ -6,6 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
 import { NotificationService } from '../notification.service';
@@ -14,7 +15,17 @@ import { ActivityLogService } from '../activity-history/activity-log.service';
 @Component({
   selector: 'app-payments',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule, MatListModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatAutocompleteModule,
+    MatButtonModule,
+    MatListModule
+  ],
   templateUrl: './payments.component.html'
 })
 export class PaymentsComponent implements OnInit {
@@ -47,10 +58,17 @@ export class PaymentsComponent implements OnInit {
     });
   }
 
-  ngOnInit() {}
+  ngOnInit() { }
 
-  getSortedPlotsInput() {
-    return [...this.plots].sort((a, b) => a.plotNumber.localeCompare(b.plotNumber, undefined, { numeric: true }));
+  // Searchable filter logic for the plot selection autocomplete
+  getFilteredPlotsForInput(): Plot[] {
+    const query = this.form.plotNumber ? this.form.plotNumber.toLowerCase().trim() : '';
+    return (this.plots || [])
+      .filter(p =>
+        p.plotNumber.toLowerCase().includes(query) ||
+        (p.ownerName && p.ownerName.toLowerCase().includes(query))
+      )
+      .sort((a, b) => a.plotNumber.localeCompare(b.plotNumber, undefined, { numeric: true }));
   }
 
   getFilteredPayments() {
@@ -70,14 +88,12 @@ export class PaymentsComponent implements OnInit {
     }
   }
 
-  // Inside your payments.component.ts save processing interceptor:
   save() {
     if (!this.form.plotNumber || !this.form.amount) return;
 
-    // 1. Locate the live reference object from the database array
     const matchedPlot = this.plots.find(p => p.plotNumber === this.form.plotNumber);
     if (!matchedPlot || !matchedPlot.id) {
-      this.notify.showError('Error: Plot reference sequence not found in configuration list.');
+      this.notify.showError('Error: Selected plot was not found in plot configuration list.');
       return;
     }
 
@@ -87,35 +103,27 @@ export class PaymentsComponent implements OnInit {
       month: this.form.month,
       date: this.form.date,
       method: this.form.method,
-      remark: this.form.remark || undefined
+      remark: this.form.remark ? this.form.remark.trim() : '' // 👈 Changed from 'undefined' to ''
     };
 
-    // 2. Fire atomic operation passing database ID and running dues balance
     this.colonyService.addPaymentTransaction(
       paymentPayload,
       matchedPlot.id,
       matchedPlot.outstandingDues || 0
     ).then(async () => {
-
-      // 🌟 FIX A: Wrap background logging in a try/catch.
-      // If the audit log fails for any reason, it won't crash your UI notifications or reset flows!
       try {
         await this.activityLog.log(
           'CREATE_PAYMENT',
-          `Processed payment of ${paymentPayload.amount} for Plot ${paymentPayload.plotNumber} (${paymentPayload.month}) via ${paymentPayload.method}`
+          `Processed payment of ₹${paymentPayload.amount} for Plot #${paymentPayload.plotNumber} (${paymentPayload.month}) via ${paymentPayload.method}`
         );
       } catch (logError) {
-        console.warn('Activity log failed to save background trail, continuing execution:', logError);
+        console.warn('Activity log background write error:', logError);
       }
 
-      // 🌟 FIX B: Save the receipt payload and turn on the success popup overlay
       this.lastSavedPayment.set(paymentPayload);
       this.showSuccess.set(true);
+      this.notify.showSuccess('Payment logged and plot outstanding balance updated.');
 
-      // 🌟 FIX C: Trigger the toast alert
-      this.notify.showSuccess('Payment synchronized and outstanding balance reduced successfully.');
-
-      // 🌟 FIX D: Clear out the form back to initial states
       this.form = {
         plotNumber: '',
         amount: 0,
@@ -125,8 +133,7 @@ export class PaymentsComponent implements OnInit {
         remark: ''
       };
     }).catch((dbError) => {
-      // Catch-all database failure fallback
-      this.notify.showError('Database Write Error: Could not synchronize ledger inflow.');
+      this.notify.showError('Database Error: Could not save payment.');
       console.error(dbError);
     });
   }
@@ -150,5 +157,22 @@ export class PaymentsComponent implements OnInit {
 
   closeOverlay() {
     this.showSuccess.set(false);
+  }
+
+  async onDeletePayment(payment: Payment) {
+    if (!payment.id) return;
+
+    const confirmMsg = `Revert payment of ₹${payment.amount} for Plot #${payment.plotNumber}? This will add ₹${payment.amount} back to the plot dues.`;
+
+    if (confirm(confirmMsg)) {
+      try {
+        await this.colonyService.deletePayment(payment.id, payment.plotNumber, payment.amount);
+        await this.activityLog.log('DELETE_PAYMENT', `Reverted payment of ₹${payment.amount} for Plot #${payment.plotNumber}`);
+        this.notify.showSuccess(`Payment reverted for Plot #${payment.plotNumber}. Dues restored.`);
+      } catch (err) {
+        console.error(err);
+        this.notify.showError('Failed to revert payment.');
+      }
+    }
   }
 }

@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, onSnapshot, doc, updateDoc, query, where, writeBatch } from '@angular/fire/firestore';
+import { Firestore, collection, collectionData, onSnapshot, doc, updateDoc, query, where, writeBatch, getDocs, deleteDoc } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
+import { ActivityLogService } from './activity-history/activity-log.service';
+
 export interface PlotMonthConfig {
   status: 'Completed' | 'Empty' | 'Underconstruction';
   rate: number;
@@ -17,7 +19,7 @@ export interface Plot {
   size: number;
   currentRate: number;
   outstandingDues: number; // Checked directly by the dashboard now
-  history?: { [month: string]: PlotMonthConfig};
+  history?: { [month: string]: PlotMonthConfig };
 }
 
 export interface Payment {
@@ -45,41 +47,32 @@ export interface BillingMetadata { generatedMonths: string[]; }
 @Injectable({ providedIn: 'root' })
 export class ColonyService {
   private firestore = inject(Firestore);
+  private activityLog = inject(ActivityLogService);
 
-async importWorkbookData(plotsList: any[], paymentsList: any[]): Promise<void> {
+async importWorkbookData(plots: Plot[], payments: Payment[], expenses: Expense[] = []) {
   const batch = writeBatch(this.firestore);
 
-  // 1. Sync or Create Plot Master Profiles
-  const plotDocMap = new Map<string, string>(); // Maps "EWS 02" -> Firestore Doc ID
-
-  for (const plot of plotsList) {
-    const plotRef = doc(collection(this.firestore, 'plots'));
-    batch.set(plotRef, {
-      plotNumber: plot.plotNumber,
-      ownerName: plot.ownerName || '',
-      phone: plot.phone || '',
-      type: plot.type || 'Others',
-      status: plot.status || 'Empty',
-      outstandingDues: Number(plot.outstandingDues) || 0,
-      currentRate: plot.type === 'EWS' || plot.type === 'LIG' ? 600 : 800
-    });
-    plotDocMap.set(plot.plotNumber, plotRef.id);
+  // 1. Batch insert/update plots
+  const plotsRef = collection(this.firestore, 'plots');
+  for (const p of plots) {
+    const docRef = doc(plotsRef, p.plotNumber);
+    batch.set(docRef, p, { merge: true });
   }
 
-  // 2. Write Historical Monthly Payment Entries
-  for (const pay of paymentsList) {
-    const payRef = doc(collection(this.firestore, 'payments'));
-    batch.set(payRef, {
-      plotNumber: pay.plotNumber,
-      amount: Number(pay.amount),
-      month: pay.month,
-      date: pay.date,
-      method: 'Cash/UPI',
-      remark: pay.remark
-    });
+  // 2. Batch insert payments
+  const paymentsRef = collection(this.firestore, 'payments');
+  for (const pay of payments) {
+    const docRef = doc(paymentsRef);
+    batch.set(docRef, pay);
   }
 
-  // Commit all writes atomically in a single network request
+  // 3. Batch insert expenses
+  const expensesRef = collection(this.firestore, 'expenses');
+  for (const exp of expenses) {
+    const docRef = doc(expensesRef);
+    batch.set(docRef, exp);
+  }
+
   await batch.commit();
 }
 
@@ -214,4 +207,42 @@ async importWorkbookData(plotsList: any[], paymentsList: any[]): Promise<void> {
   updateBillingMetadata(months: string[]): Promise<void> {
     return updateDoc(doc(this.firestore, 'metadata', 'billing'), { generatedMonths: months });
   }
+
+
+  async deletePayment(paymentId: string, plotNumber: string, amount: number): Promise<void> {
+    // 1. Delete the payment record
+    const paymentRef = doc(this.firestore, `payments/${paymentId}`);
+    await deleteDoc(paymentRef);
+
+    // 2. Locate plot and restore outstanding dues
+    const q = query(collection(this.firestore, 'plots'), where('plotNumber', '==', plotNumber));
+    const querySnap = await getDocs(q);
+
+    if (!querySnap.empty) {
+      const plotDoc = querySnap.docs[0];
+      const currentDues = Number(plotDoc.data()['outstandingDues']) || 0;
+
+      // Restoring dues (adding amount back)
+      await updateDoc(plotDoc.ref, {
+        outstandingDues: currentDues + Number(amount)
+      });
+    }
+
+    // 3. Log activity log entry
+    await this.activityLog.log(
+      'DELETE_PAYMENT',
+      `Reverted erroneous payment: ₹${amount} for Plot #${plotNumber}`
+    );
+  }
+
+  async deleteExpense(expenseId: string): Promise<void> {
+    const ref = doc(this.firestore, `expenses/${expenseId}`);
+    await deleteDoc(ref);
+  }
+
+  // Add this inside ColonyService if it's missing:
+getAllExpenses(): Observable<Expense[]> {
+  const expensesRef = collection(this.firestore, 'expenses');
+  return collectionData(expensesRef, { idField: 'id' }) as Observable<Expense[]>;
+}
 }
